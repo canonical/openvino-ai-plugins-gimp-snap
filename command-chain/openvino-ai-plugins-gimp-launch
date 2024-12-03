@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# config stores python_path, weight_path, and supported_devices
+export GIMP_OPENVINO_CONFIG_PATH="${SNAP_USER_COMMON}"
+# path to models stored in home directory
+DEFAULT_PATH="${SNAP_REAL_HOME}"/openvino-ai-plugins-gimp
+export GIMP_OPENVINO_MODELS_PATH="${GIMP_OPENVINO_MODELS_PATH:-$DEFAULT_PATH}"
+
+if [ "${SNAP_NAME}" != "openvino-ai-plugins-gimp" ]; then
+  CONTENT_PATH="${SNAP}"/openvino-ai-plugins-gimp
+  if [ ! -d "${CONTENT_PATH}" ]; then
+    echo "Warning: ${CONTENT_PATH} not present inside ${SNAP_NAME} snap. Please connect the content interface at this path."
+  fi
+  export LD_LIBRARY_PATH="${CONTENT_PATH}"/usr/lib/x86_64-linux-gnu:"${SNAP}"/openvino-ai-plugins-gimp/usr/local/lib:"${LD_LIBRARY_PATH}"
+  export PYTHONPATH="${CONTENT_PATH}"/lib/python3.12/site-packages:"${PYTHONPATH}"
+  export OCL_ICD_VENDORS="${CONTENT_PATH}"/etc/OpenCL/vendors
+fi
+
+# dependency for model_setup.py
+mkdir -p "${GIMP_OPENVINO_MODELS_PATH}"/{weights,mms_tmp}
+
+echo "[OpenVINO AI Plugins for GIMP]: Installing super resolution and semantic segmentation models to ${GIMP_OPENVINO_MODELS_PATH} and config to ${GIMP_OPENVINO_CONFIG_PATH}"
+
+# Copy superresolution and semseg models to OV_MODEL_PATH/weights and generate config file
+# Note we force success and suppress output because the script attempts (and fails) to
+# adjust permissions on files inside the snap
+weights_dir=$(find "${SNAP}" -maxdepth 1 -name weights)
+python3 -c "from gimpopenvino import complete_install; complete_install.setup_python_weights(install_location=r'${GIMP_OPENVINO_MODELS_PATH}', repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1 || true
+
+exec "$@"
