@@ -1,0 +1,173 @@
+name: openvino-ai-plugins-gimp
+base: core24
+summary: Intel's OpenVINO™ AI Plugins for GIMP
+description: |
+  OpenVINO™ AI plugins for GIMP adds AI functionality to GIMP for
+  stable diffusion, super resolution, and semantic segmentation.
+  The plugins can run on Intel CPU, NPU, or GPU devices. This snap
+  also provides an application for downloading models that can be
+  used with the stable diffusion plugin.
+
+grade: devel
+confinement: strict
+adopt-info: gimp-plugins
+
+platforms:
+  amd64:
+
+# the recommended mountpoint for the content is /openvino-ai-plugins-gimp
+slots:
+  openvino-ai-plugins-gimp-libs:
+    interface: content
+    content: openvino-ai-plugins-gimp-2404
+    read:
+      - /
+
+plugs:
+  intel-npu:
+    interface: custom-device
+    custom-device: intel-npu-device
+  npu-libs:
+    interface: content
+    content: npu-libs-2404
+    target: $SNAP/npu-libs
+  openvino-libs:
+    interface: content
+    content: openvino-libs-2404
+    target: $SNAP/openvino
+
+apps:
+  model-setup:
+    command-chain: ["command-chain/openvino-launch", "command-chain/openvino-ai-plugins-gimp-launch"]
+    command: usr/bin/python3 $SNAP/model_setup.py
+    plugs:
+      - home # models stored in home directory
+      - opengl # Intel GPU access (device nodes)
+      - intel-npu # Intel NPU access (device node)
+      - npu-libs # Intel NPU access (libs)
+      - network # for downloading models
+      - openvino-libs # OpenVINO runtime
+    environment:
+      # Intel OpenCL libs install to /usr/local/lib
+      LD_LIBRARY_PATH: $SNAP/npu-libs:$SNAP/usr/local/lib:$LD_LIBRARY_PATH
+      PYTHONPATH: $SNAP/lib/python3.12/site-packages:$PYTHONPATH
+      OCL_ICD_VENDORS: $SNAP/etc/OpenCL/vendors
+
+parts:
+  gimp-plugins:
+    source-type: git
+    source: https://github.com/frenchwr/openvino-ai-plugins-gimp # TODO: update to upstream
+    source-branch: snap # TODO: update to stable branch once merged
+    plugin: python
+    python-requirements:
+      - ./requirements.txt
+    override-pull: |
+      craftctl default
+      # remove openvino dependency since it has its own part below
+      sed -i '/\"openvino\"/d' ./setup.py
+      sed -i '/openvino==/d' ./requirements.txt
+      craftctl set version="$(git describe --tags --abbrev=4 --always)"
+    override-build: |
+      craftctl default
+      mkdir -p ${CRAFT_PART_INSTALL}/weights ${CRAFT_PART_INSTALL}/gimp-plugins
+      cp -r weights/* ${CRAFT_PART_INSTALL}/weights/
+      cp model_setup.py ${CRAFT_PART_INSTALL}
+      cp -r gimpopenvino/plugins/* ${CRAFT_PART_INSTALL}/gimp-plugins/
+    stage-packages:
+      - python3-minimal # python interpreter
+      - python3.12-minimal # python interpreter
+      - libva2 # openvino gpu plugin dep
+      - libgl1 # opencv-python dep
+      - libglu1-mesa # opencv-python dep
+      - libxcb1 # opencv-python dep
+      - libice6 # opencv-python dep
+      - libsm6 # opencv-python dep
+      - libx11-6 # opencv-python dep
+      - libxext6 # opencv-python dep
+      - libgomp1 # pytorch dep
+    stage:
+      - -lib/python3.12/site-packages/torch/lib/libtorchbind_test.so
+      - -usr/lib/x86_64-linux-gnu/libGLU.so.1.3.1
+      - -usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
+      - -usr/lib/x86_64-linux-gnu/libicuio.so.74.2
+      - -usr/lib/x86_64-linux-gnu/libicutest.so.74.2
+      - -usr/lib/x86_64-linux-gnu/libvulkan.so.1.3.275
+      - -usr/lib/x86_64-linux-gnu/libOpenGL.so.0.0.0
+      - -usr/lib/x86_64-linux-gnu/libXfixes.so.3.1.0
+      - -usr/lib/x86_64-linux-gnu/libXxf86vm.so.1.0.0
+      - -usr/lib/x86_64-linux-gnu/libicutu.so.74.2
+      - -usr/lib/x86_64-linux-gnu/libxcb-dri2.so.0.0.0
+      - -usr/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0
+      - -usr/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0
+      - -usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0
+      - -usr/lib/x86_64-linux-gnu/libxcb-shm.so.0.0.0
+      - -usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0
+      - -usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0
+      - -usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
+      - -usr/lib/x86_64-linux-gnu/libicui18n.so.74.2
+
+  opencl-driver:
+    # Includes all the compute runtime and OpenCL bits needed for Intel GPU support
+    plugin: nil
+    build-packages:
+      - wget
+    override-build: |
+      mkdir -p neo
+      cd neo
+      # Install Intel graphics compiler and compute runtime
+      # This is required to enable GPU support for OpenVINO
+      # https://docs.openvino.ai/2024/get-started/configurations/configurations-intel-gpu.html
+      wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.17791.9/intel-igc-core_1.0.17791.9_amd64.deb
+      wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.17791.9/intel-igc-opencl_1.0.17791.9_amd64.deb
+      wget https://github.com/intel/compute-runtime/releases/download/24.39.31294.12/intel-level-zero-gpu_1.6.31294.12_amd64.deb
+      wget https://github.com/intel/compute-runtime/releases/download/24.39.31294.12/intel-opencl-icd_24.39.31294.12_amd64.deb
+      wget https://github.com/intel/compute-runtime/releases/download/24.39.31294.12/libigdgmm12_22.5.2_amd64.deb
+      dpkg --root=$CRAFT_PART_INSTALL --force-all -i *.deb
+      # update paths to the Intel Installable Client Drivers (ICDs) for OpenCL
+      intel_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel.icd
+      intel_icd_so_path=$(cat ${intel_icd})
+      base_path="/snap/${SNAPCRAFT_PROJECT_NAME}/current"
+      echo "${base_path}""${intel_icd_so_path}" > "${intel_icd}"
+      intel_legacy1_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel_legacy1.icd
+      if [ -f ${intel_legacy1_icd} ]; then
+        intel_legacy1_icd_so_path=$(cat ${intel_legacy1_icd})
+        echo "${base_path}""${intel_legacy1_icd_so_path}" > "${intel_legacy1_icd}"
+      fi
+      # fix broken sym links
+      cd "${CRAFT_PART_INSTALL}"
+      ln -sf "${base_path}"/usr/bin/ocloc-24.39.1 etc/alternatives/ocloc
+      ln -sf "${base_path}"/etc/alternatives/ocloc usr/bin/ocloc
+      craftctl default
+
+  command-chain-openvino:
+    plugin: dump
+    source-type: git
+    source: https://github.com/canonical/openvino-toolkit-snap.git
+    source-branch: openvino-toolkit-2404
+    stage:
+      - command-chain/openvino-launch
+
+  command-chain-openvino-ai-plugins-gimp:
+    plugin: dump
+    source: command-chain/
+    organize:
+      '*': command-chain/
+
+lint:
+  ignore:
+    - library:
+      # These are needed but are flagged
+      # by the linter because they are not
+      # explicitly linked to any binary or
+      # shared object
+      - openvino/usr/runtime/3rdparty/tbb/lib/libtbbbind*
+      - openvino/usr/runtime/3rdparty/tbb/lib/libtbbmalloc*
+      - openvino/usr/runtime/3rdparty/tbb/lib/libhwloc*
+      - usr/lib/x86_64-linux-gnu/libva.so.2.2000.0
+      - usr/lib/x86_64-linux-gnu/libze_intel_gpu.so.1.6.31294.12
+      - usr/local/lib/libiga64.so.1.0.17791.9
+      - usr/local/lib/libigc.so.1.0.17791.9
+      - usr/local/lib/libigdfcl.so.1.0.17791.9
+      - usr/local/lib/libopencl-clang.so
+      - usr/local/lib/libopencl-clang.so.14
+      - lib/python3.12/site-packages/torch/lib/libtorch_global_deps.so
