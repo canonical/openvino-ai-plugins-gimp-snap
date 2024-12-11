@@ -22,9 +22,7 @@ mkdir -p "${GIMP_OPENVINO_MODELS_PATH}"/{weights,mms_tmp}
 echo "[OpenVINO AI Plugins for GIMP]: Installing super resolution and semantic segmentation models to ${GIMP_OPENVINO_MODELS_PATH} and config to ${GIMP_OPENVINO_CONFIG_PATH}"
 
 # Copy superresolution and semseg models to OV_MODEL_PATH/weights and generate config file
-# Note we force success and suppress output because the script attempts (and fails) to
-# adjust permissions on files inside the snap
 weights_dir=$(find "${SNAP}" -maxdepth 1 -name weights)
-python3 -c "from gimpopenvino import complete_install; complete_install.setup_python_weights(install_location=r'${GIMP_OPENVINO_MODELS_PATH}', repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1 || true
+python3 -c "from gimpopenvino import complete_install; complete_install.setup_python_weights(install_location=r'${GIMP_OPENVINO_MODELS_PATH}', repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1
 
 exec "$@"
