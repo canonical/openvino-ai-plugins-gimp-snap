@@ -3,8 +3,7 @@
 # config stores python_path, weight_path, and supported_devices
 export GIMP_OPENVINO_CONFIG_PATH="${SNAP_USER_COMMON}"
 # path to models stored in home directory
-DEFAULT_PATH="${SNAP_REAL_HOME}"/openvino-ai-plugins-gimp
-export GIMP_OPENVINO_MODELS_PATH="${GIMP_OPENVINO_MODELS_PATH:-$DEFAULT_PATH}"
+export GIMP_OPENVINO_MODELS_PATH="${SNAP_REAL_HOME}"/.local/share/openvino-ai-plugins-gimp
 
 if [ "${SNAP_NAME}" != "openvino-ai-plugins-gimp" ]; then
   CONTENT_PATH="${SNAP}"/openvino-ai-plugins-gimp
