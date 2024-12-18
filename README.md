@@ -20,10 +20,10 @@ sudo snap install --dangerous ./openvino-ai-plugins-gimp_*_amd64.snap
 
 ### Connecting plugs
 
-In order to run the `openvino-ai-plugins-gimp.model-setup` app (more details below), a number of snapd interfaces must first be plugged:
+In order to run the `openvino-ai-plugins-gimp.model-setup` app (more details below), a number of snapd interfaces must first be plugged. The following will allow the snap write access to `~/.local/share/openvino-ai-plugins-gimp` and also connect to a content producer snap providing OpenVINO runtime libraries:
 
 ```
-sudo snap connect openvino-ai-plugins-gimp:home
+sudo snap connect openvino-ai-plugins-gimp:dot-local-share-openvino-ai-plugins-gimp
 sudo snap install openvino-toolkit-2404 --beta # install content producer snap
 sudo snap connect openvino-ai-plugins-gimp:openvino-libs openvino-toolkit-2404:openvino-libs
 ```
@@ -36,9 +36,9 @@ sudo snap connect openvino-ai-plugins-gimp:intel-npu intel-npu-driver:intel-npu
 sudo snap connect openvino-ai-plugins-gimp:npu-libs intel-npu-driver:npu-libs
 ```
 
-### Snap content producer slot
+### Snap slots
 
-This snap exposes a snapd slot using the content interface to enable the GIMP snap to integrate the Python-based GIMP plugins.
+This snap exposes a few snapd slots: one using the content interface to enable the GIMP snap to integrate the Python-based GIMP plugins, and the second allows the GIMP snap to access the stable diffusion model directory at `~/.local/share/openvino-ai-plugins-gimp`.
 
 An example snippet for a consuming app's `snapcraft.yaml` may look like:
 
@@ -48,6 +48,10 @@ plugs:
     interface: content
     content: openvino-ai-plugins-gimp-2404
     target: $SNAP/openvino-ai-plugins-gimp
+  dot-local-share-openvino-ai-plugins-gimp:
+    interface: personal-files
+    read:
+      - $HOME/.local/share/openvino-ai-plugins-gimp
 
 apps:
   gimp-app:
@@ -56,6 +60,7 @@ apps:
       - command-chain/openvino-ai-plugins-gimp-launch
     plugs:
       - openvino-ai-plugins-gimp-libs
+      - dot-local-share-openvino-ai-plugins-gimp
 
 parts:
   gimp:
@@ -78,16 +83,6 @@ parts:
 
 ## Installing stable diffusion models
 
-To install models for the stable diffusion plugin (models for other plugins are small in size and thus are installed inside the snap), there is a `openvino-ai-plugins-gimp.model-setup` command line tool that provides an interactive menu for installing models to your home directory.
-
-By default the models will be installed at `~/openvino-ai-plugins-gimp`, however this can be adjusted with the `GIMP_OPENVINO_MODELS_PATH` shell variable. For example:
-
-```
-GIMP_OPENVINO_MODELS_PATH=$HOME/models/install-here-instead openvino-ai-plugins-gimp.model-setup
-```
-
-Note the following limitations for `GIMP_OPENVINO_MODELS_PATH`:
-* The path must be located in your home directory
-* The path cannot contain hidden directories
+To install models for the stable diffusion plugin (models for other plugins are small in size and thus are installed inside the snap), there is a `openvino-ai-plugins-gimp.model-setup` command line tool that provides an interactive menu for installing models to your home directory at `~/.local/share/openvino-ai-plugins-gimp`.
 
 Also note that if you are running on a system with Intel NPU support, some models may be automatically compiled for the NPU following the download.

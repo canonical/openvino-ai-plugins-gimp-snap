@@ -35,13 +35,17 @@ plugs:
     interface: content
     content: openvino-libs-2404
     target: $SNAP/openvino
+  dot-local-share-openvino-ai-plugins-gimp:
+    interface: personal-files
+    write:
+      - $HOME/.local/share/openvino-ai-plugins-gimp
 
 apps:
   model-setup:
     command-chain: ["command-chain/openvino-launch", "command-chain/openvino-ai-plugins-gimp-launch"]
     command: usr/bin/python3 $SNAP/model_setup.py
     plugs:
-      - home # models stored in home directory
+      - dot-local-share-openvino-ai-plugins-gimp # models stored in home directory
       - opengl # Intel GPU access (device nodes)
       - intel-npu # Intel NPU access (device node)
       - npu-libs # Intel NPU access (libs)
