@@ -49,11 +49,11 @@ sudo snap connect openvino-ai-plugins-gimp:intel-npu intel-npu-driver:intel-npu
 sudo snap connect openvino-ai-plugins-gimp:npu-libs intel-npu-driver:npu-libs
 ```
 
-### Snap slots
+### Snap slot
 
-This snap exposes a few snapd slots: one using the content interface to enable the GIMP snap to integrate the Python-based GIMP plugins, and the second allows the GIMP snap to access the stable diffusion model directory at `~/.local/share/openvino-ai-plugins-gimp`.
+This snap exposes a slot using the content interface to enable the GIMP snap to integrate the Python-based GIMP plugins.
 
-An example snippet for a consuming app's `snapcraft.yaml` may look like:
+An example snippet for a consuming app's (GIMP) `snapcraft.yaml` may look like:
 
 ```yaml
 plugs:
@@ -61,10 +61,6 @@ plugs:
     interface: content
     content: openvino-ai-plugins-gimp-2404
     target: $SNAP/openvino-ai-plugins-gimp
-  dot-local-share-openvino-ai-plugins-gimp:
-    interface: personal-files
-    read:
-      - $HOME/.local/share/openvino-ai-plugins-gimp
 
 apps:
   gimp-app:
@@ -73,7 +69,6 @@ apps:
       - command-chain/openvino-ai-plugins-gimp-launch
     plugs:
       - openvino-ai-plugins-gimp-libs
-      - dot-local-share-openvino-ai-plugins-gimp
 
 parts:
   gimp:
@@ -89,7 +84,7 @@ parts:
     plugin: dump
     source-type: git
     source: https://github.com/canonical/openvino-ai-plugins-gimp-snap.git
-    source-branch: ...
+    source-commit: ...
     stage:
       - command-chain/openvino-ai-plugins-gimp-launch
 ```
