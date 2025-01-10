@@ -13,6 +13,8 @@ confinement: strict
 adopt-info: gimp-plugins
 
 platforms:
+  arm64:
+    build-on: [amd64]
   amd64:
 
 # the recommended mountpoint for the content is /openvino-ai-plugins-gimp
@@ -121,11 +123,11 @@ parts:
       # Install Intel graphics compiler and compute runtime
       # This is required to enable GPU support for OpenVINO
       # https://docs.openvino.ai/2024/get-started/configurations/configurations-intel-gpu.html
-      wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.17791.9/intel-igc-core_1.0.17791.9_amd64.deb
-      wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.17791.9/intel-igc-opencl_1.0.17791.9_amd64.deb
-      wget https://github.com/intel/compute-runtime/releases/download/24.39.31294.12/intel-level-zero-gpu_1.6.31294.12_amd64.deb
-      wget https://github.com/intel/compute-runtime/releases/download/24.39.31294.12/intel-opencl-icd_24.39.31294.12_amd64.deb
-      wget https://github.com/intel/compute-runtime/releases/download/24.39.31294.12/libigdgmm12_22.5.2_amd64.deb
+      wget https://github.com/intel/intel-graphics-compiler/releases/download/v2.5.6/intel-igc-core-2_2.5.6+18417_amd64.deb
+      wget https://github.com/intel/intel-graphics-compiler/releases/download/v2.5.6/intel-igc-opencl-2_2.5.6+18417_amd64.deb
+      wget https://github.com/intel/compute-runtime/releases/download/24.52.32224.5/intel-level-zero-gpu_1.6.32224.5_amd64.deb
+      wget https://github.com/intel/compute-runtime/releases/download/24.52.32224.5/intel-opencl-icd_24.52.32224.5_amd64.deb
+      wget https://github.com/intel/compute-runtime/releases/download/24.52.32224.5/libigdgmm12_22.5.5_amd64.deb
       dpkg --root=$CRAFT_PART_INSTALL --force-all -i *.deb
       # update paths to the Intel Installable Client Drivers (ICDs) for OpenCL
       intel_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel.icd
@@ -147,7 +149,7 @@ parts:
     plugin: dump
     source-type: git
     source: https://github.com/canonical/openvino-toolkit-snap.git
-    source-branch: openvino-toolkit-2404
+    source-tag: 2024.6.0-0
     stage:
       - command-chain/openvino-launch
 
@@ -167,11 +169,10 @@ lint:
       - openvino/usr/runtime/3rdparty/tbb/lib/libtbbbind*
       - openvino/usr/runtime/3rdparty/tbb/lib/libtbbmalloc*
       - openvino/usr/runtime/3rdparty/tbb/lib/libhwloc*
-      - usr/lib/x86_64-linux-gnu/libva.so.2.2000.0
-      - usr/lib/x86_64-linux-gnu/libze_intel_gpu.so.1.6.31294.12
-      - usr/local/lib/libiga64.so.1.0.17791.9
-      - usr/local/lib/libigc.so.1.0.17791.9
-      - usr/local/lib/libigdfcl.so.1.0.17791.9
-      - usr/local/lib/libopencl-clang.so
-      - usr/local/lib/libopencl-clang.so.14
+      - usr/lib/x86_64-linux-gnu/libva.so.*
+      - usr/lib/x86_64-linux-gnu/libze_intel_gpu.so.*
+      - usr/local/lib/libiga64.so*
+      - usr/local/lib/libigc.so.*
+      - usr/local/lib/libigdfcl.so.*
+      - usr/local/lib/libopencl-clang*
       - lib/python3.12/site-packages/torch/lib/libtorch_global_deps.so
