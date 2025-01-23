@@ -14,7 +14,6 @@ adopt-info: gimp-plugins
 
 platforms:
   arm64:
-    build-on: [amd64]
   amd64:
 
 # the recommended mountpoint for the content is /openvino-ai-plugins-gimp
@@ -149,7 +148,7 @@ parts:
     plugin: dump
     source-type: git
     source: https://github.com/canonical/openvino-toolkit-snap.git
-    source-tag: 2024.6.0-0
+    source-tag: 2024.6.0-1
     stage:
       - command-chain/openvino-launch
 
