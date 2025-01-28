@@ -26,6 +26,6 @@ echo "[OpenVINO AI Plugins for GIMP]: Installing super resolution and semantic s
 # Copy super resolution and semseg models to $GIMP_OPENVINO_MODELS_PATH/weights and generate config file
 # Note we force success and suppress output because the script attempts (and fails) to
 # adjust permissions on files inside the snap
-python3 -c "from gimpopenvino import complete_install; complete_install.setup_python_weights(install_location=r'${GIMP_OPENVINO_MODELS_PATH}', repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1 || true
+python3 -c "from gimpopenvino import install_utils; install_utils.complete_install(repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1 || true
 
 exec "$@"

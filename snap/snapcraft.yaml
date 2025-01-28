@@ -61,8 +61,8 @@ apps:
 parts:
   gimp-plugins:
     source-type: git
-    source: https://github.com/frenchwr/openvino-ai-plugins-gimp # TODO: update to upstream
-    source-branch: snap # TODO: update to stable branch once merged
+    source: https://github.com/intel/openvino-ai-plugins-gimp
+    source-tag: 3.0.0
     plugin: python
     python-requirements:
       - ./requirements.txt
