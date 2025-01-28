@@ -93,6 +93,7 @@ parts:
       - libx11-6 # opencv-python dep
       - libxext6 # opencv-python dep
       - libgomp1 # pytorch dep
+      - git # plugin version displayed in GIMP by running "git describe"
     stage:
       - -lib/python3.12/site-packages/torch/lib/libtorchbind_test.so
       - -usr/lib/x86_64-linux-gnu/libGLU.so.1.3.1
