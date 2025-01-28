@@ -78,6 +78,8 @@ parts:
       cp -r weights/* ${CRAFT_PART_INSTALL}/weights/
       cp model_setup.py ${CRAFT_PART_INSTALL}
       cp -r gimpopenvino/plugins/* ${CRAFT_PART_INSTALL}/gimp-plugins/
+      # plugins set plugin version from git tags, so copy repo metadata into snap
+      cp -r .git ${CRAFT_PART_INSTALL}/gimp-plugins/
       chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/stable_diffusion_ov/stable_diffusion_ov.py
       chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/semseg_ov/semseg_ov.py
       chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/superresolution_ov/superresolution_ov.py

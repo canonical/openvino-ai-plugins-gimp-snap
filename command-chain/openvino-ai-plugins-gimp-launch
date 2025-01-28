@@ -14,8 +14,10 @@ if [ "${SNAP_NAME}" != "openvino-ai-plugins-gimp" ]; then
   export LD_LIBRARY_PATH="${CONTENT_PATH}"/usr/lib/x86_64-linux-gnu:"${SNAP}"/openvino-ai-plugins-gimp/usr/local/lib:"${LD_LIBRARY_PATH}"
   export PYTHONPATH="${CONTENT_PATH}"/lib/python3.12/site-packages:"${PYTHONPATH}"
   export OCL_ICD_VENDORS="${CONTENT_PATH}"/etc/OpenCL/vendors
+  export GIT_DIR="${CONTENT_PATH}"/gimp-plugins/.git
   weights_dir="${SNAP}"/openvino-ai-plugins-gimp/weights
 else
+  export GIT_DIR="${SNAP}"/gimp-plugins/.git
   weights_dir="${SNAP}"/weights
 fi
 
