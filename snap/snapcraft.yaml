@@ -68,7 +68,7 @@ parts:
       - ./requirements.txt
     override-pull: |
       craftctl default
-      # remove openvino dependency since it has its own part below
+      # remove openvino dependency since it is mounted from content producer snap
       sed -i '/\"openvino\"/d' ./setup.py
       sed -i '/openvino==/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
@@ -78,6 +78,9 @@ parts:
       cp -r weights/* ${CRAFT_PART_INSTALL}/weights/
       cp model_setup.py ${CRAFT_PART_INSTALL}
       cp -r gimpopenvino/plugins/* ${CRAFT_PART_INSTALL}/gimp-plugins/
+      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/stable_diffusion_ov/stable_diffusion_ov.py
+      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/semseg_ov/semseg_ov.py
+      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/superresolution_ov/superresolution_ov.py
     stage-packages:
       - python3-minimal # python interpreter
       - python3.12-minimal # python interpreter
