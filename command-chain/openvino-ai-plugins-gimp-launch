@@ -10,11 +10,14 @@ if [ "${SNAP_NAME}" != "openvino-ai-plugins-gimp" ]; then
   if [ ! -d "${CONTENT_PATH}" ]; then
     echo "Warning: ${CONTENT_PATH} not present inside ${SNAP_NAME} snap. Please connect the content interface at this path."
   fi
+  export PATH="${PATH}":"${CONTENT_PATH}"/usr/bin
   export LD_LIBRARY_PATH="${CONTENT_PATH}"/usr/lib/x86_64-linux-gnu:"${SNAP}"/openvino-ai-plugins-gimp/usr/local/lib:"${LD_LIBRARY_PATH}"
   export PYTHONPATH="${CONTENT_PATH}"/lib/python3.12/site-packages:"${PYTHONPATH}"
   export OCL_ICD_VENDORS="${CONTENT_PATH}"/etc/OpenCL/vendors
+  export GIT_DIR="${CONTENT_PATH}"/gimp-plugins/.git
   weights_dir="${SNAP}"/openvino-ai-plugins-gimp/weights
 else
+  export GIT_DIR="${SNAP}"/gimp-plugins/.git
   weights_dir="${SNAP}"/weights
 fi
 
@@ -26,6 +29,6 @@ echo "[OpenVINO AI Plugins for GIMP]: Installing super resolution and semantic s
 # Copy super resolution and semseg models to $GIMP_OPENVINO_MODELS_PATH/weights and generate config file
 # Note we force success and suppress output because the script attempts (and fails) to
 # adjust permissions on files inside the snap
-python3 -c "from gimpopenvino import complete_install; complete_install.setup_python_weights(install_location=r'${GIMP_OPENVINO_MODELS_PATH}', repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1 || true
+python3 -c "from gimpopenvino import install_utils; install_utils.complete_install(repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1 || true
 
 exec "$@"

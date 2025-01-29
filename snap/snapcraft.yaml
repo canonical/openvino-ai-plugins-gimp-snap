@@ -61,14 +61,14 @@ apps:
 parts:
   gimp-plugins:
     source-type: git
-    source: https://github.com/frenchwr/openvino-ai-plugins-gimp # TODO: update to upstream
-    source-branch: snap # TODO: update to stable branch once merged
+    source: https://github.com/intel/openvino-ai-plugins-gimp
+    source-tag: 3.0.0
     plugin: python
     python-requirements:
       - ./requirements.txt
     override-pull: |
       craftctl default
-      # remove openvino dependency since it has its own part below
+      # remove openvino dependency since it is mounted from content producer snap
       sed -i '/\"openvino\"/d' ./setup.py
       sed -i '/openvino==/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
@@ -78,6 +78,11 @@ parts:
       cp -r weights/* ${CRAFT_PART_INSTALL}/weights/
       cp model_setup.py ${CRAFT_PART_INSTALL}
       cp -r gimpopenvino/plugins/* ${CRAFT_PART_INSTALL}/gimp-plugins/
+      # plugins set plugin version from git tags, so copy repo metadata into snap
+      cp -r .git ${CRAFT_PART_INSTALL}/gimp-plugins/
+      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/stable_diffusion_ov/stable_diffusion_ov.py
+      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/semseg_ov/semseg_ov.py
+      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/superresolution_ov/superresolution_ov.py
     stage-packages:
       - python3-minimal # python interpreter
       - python3.12-minimal # python interpreter
@@ -90,6 +95,7 @@ parts:
       - libx11-6 # opencv-python dep
       - libxext6 # opencv-python dep
       - libgomp1 # pytorch dep
+      - git # plugin version displayed in GIMP by running "git describe"
     stage:
       - -lib/python3.12/site-packages/torch/lib/libtorchbind_test.so
       - -usr/lib/x86_64-linux-gnu/libGLU.so.1.3.1
