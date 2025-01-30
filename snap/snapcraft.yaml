@@ -8,7 +8,7 @@ description: |
   also provides an application for downloading models that can be
   used with the stable diffusion plugin.
 
-grade: devel
+grade: stable
 confinement: strict
 adopt-info: gimp-plugins
 
