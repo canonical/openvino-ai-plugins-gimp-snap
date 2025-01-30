@@ -154,7 +154,7 @@ parts:
     plugin: dump
     source-type: git
     source: https://github.com/canonical/openvino-toolkit-snap.git
-    source-tag: 2024.6.0-1
+    source-tag: 2024.6.0-2
     stage:
       - command-chain/openvino-launch
 
