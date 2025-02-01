@@ -13,7 +13,6 @@ confinement: strict
 adopt-info: gimp-plugins
 
 platforms:
-  arm64:
   amd64:
 
 # the recommended mountpoint for the content is /openvino-ai-plugins-gimp
