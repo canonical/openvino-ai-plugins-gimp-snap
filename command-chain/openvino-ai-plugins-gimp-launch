@@ -1,34 +1,39 @@
 #!/bin/bash
 
-# config stores python_path, weight_path, and supported_devices
-export GIMP_OPENVINO_CONFIG_PATH="${SNAP_USER_COMMON}"
-# path to models stored in home directory
-export GIMP_OPENVINO_MODELS_PATH="${SNAP_REAL_HOME}"/.local/share/openvino-ai-plugins-gimp
+# Plugins only support Intel hardware
+if grep -qw "GenuineIntel" /proc/cpuinfo; then
 
-if [ "${SNAP_NAME}" != "openvino-ai-plugins-gimp" ]; then
-  CONTENT_PATH="${SNAP}"/openvino-ai-plugins-gimp
-  if [ ! -d "${CONTENT_PATH}" ]; then
-    echo "Warning: ${CONTENT_PATH} not present inside ${SNAP_NAME} snap. Please connect the content interface at this path."
+  # config stores python_path, weight_path, and supported_devices
+  export GIMP_OPENVINO_CONFIG_PATH="${SNAP_USER_COMMON}"
+  # path to models stored in home directory
+  export GIMP_OPENVINO_MODELS_PATH="${SNAP_REAL_HOME}"/.local/share/openvino-ai-plugins-gimp
+
+  if [ "${SNAP_NAME}" != "openvino-ai-plugins-gimp" ]; then
+    CONTENT_PATH="${SNAP}"/openvino-ai-plugins-gimp
+    if [ ! -d "${CONTENT_PATH}" ]; then
+      echo "Warning: ${CONTENT_PATH} not present inside ${SNAP_NAME} snap. Please install the snap using 'sudo snap install openvino-ai-plugins-gimp --beta' and restart the application."
+    fi
+    export PATH="${PATH}":"${CONTENT_PATH}"/usr/bin
+    export LD_LIBRARY_PATH="${CONTENT_PATH}"/usr/lib/$(uname -m)-linux-gnu:"${SNAP}"/openvino-ai-plugins-gimp/usr/local/lib:"${LD_LIBRARY_PATH}"
+    export PYTHONPATH="${CONTENT_PATH}"/lib/python3.12/site-packages:"${PYTHONPATH}"
+    export OCL_ICD_VENDORS="${CONTENT_PATH}"/etc/OpenCL/vendors
+    export GIT_DIR="${CONTENT_PATH}"/gimp-plugins/.git
+    weights_dir="${SNAP}"/openvino-ai-plugins-gimp/weights
+  else
+    export GIT_DIR="${SNAP}"/gimp-plugins/.git
+    weights_dir="${SNAP}"/weights
   fi
-  export PATH="${PATH}":"${CONTENT_PATH}"/usr/bin
-  export LD_LIBRARY_PATH="${CONTENT_PATH}"/usr/lib/$(uname -m)-linux-gnu:"${SNAP}"/openvino-ai-plugins-gimp/usr/local/lib:"${LD_LIBRARY_PATH}"
-  export PYTHONPATH="${CONTENT_PATH}"/lib/python3.12/site-packages:"${PYTHONPATH}"
-  export OCL_ICD_VENDORS="${CONTENT_PATH}"/etc/OpenCL/vendors
-  export GIT_DIR="${CONTENT_PATH}"/gimp-plugins/.git
-  weights_dir="${SNAP}"/openvino-ai-plugins-gimp/weights
-else
-  export GIT_DIR="${SNAP}"/gimp-plugins/.git
-  weights_dir="${SNAP}"/weights
+
+  # dependency for model_setup.py
+  mkdir -p "${GIMP_OPENVINO_MODELS_PATH}"/{weights,mms_tmp}
+
+  echo "[OpenVINO AI Plugins for GIMP]: Installing super resolution and semantic segmentation models to ${GIMP_OPENVINO_MODELS_PATH} and config to ${GIMP_OPENVINO_CONFIG_PATH}"
+
+  # Copy super resolution and semseg models to $GIMP_OPENVINO_MODELS_PATH/weights and generate config file
+  # Note we force success and suppress output because the script attempts (and fails) to
+  # adjust permissions on files inside the snap
+  python3 -c "from gimpopenvino import install_utils; install_utils.complete_install(repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1 || true
+
 fi
-
-# dependency for model_setup.py
-mkdir -p "${GIMP_OPENVINO_MODELS_PATH}"/{weights,mms_tmp}
-
-echo "[OpenVINO AI Plugins for GIMP]: Installing super resolution and semantic segmentation models to ${GIMP_OPENVINO_MODELS_PATH} and config to ${GIMP_OPENVINO_CONFIG_PATH}"
-
-# Copy super resolution and semseg models to $GIMP_OPENVINO_MODELS_PATH/weights and generate config file
-# Note we force success and suppress output because the script attempts (and fails) to
-# adjust permissions on files inside the snap
-python3 -c "from gimpopenvino import install_utils; install_utils.complete_install(repo_weights_dir=r'${weights_dir}')" >/dev/null 2>&1 || true
 
 exec "$@"
