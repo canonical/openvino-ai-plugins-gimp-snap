@@ -15,6 +15,16 @@ adopt-info: gimp-plugins
 platforms:
   amd64:
 
+layout:
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
+
+package-repositories:
+  - type: apt
+    ppa: kobuk-team/intel-graphics
+    priority: prefer
+    key-id: 0C0E6AF955CE463C03FC51574D098D70AFBE5E1F
+
 # the recommended mountpoint for the content is /openvino-ai-plugins-gimp
 slots:
   openvino-ai-plugins-gimp-libs:
@@ -116,38 +126,23 @@ parts:
       - -usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
       - -usr/lib/x86_64-linux-gnu/libicui18n.so.74.2
 
-  opencl-driver:
-    # Includes all the compute runtime and OpenCL bits needed for Intel GPU support
+  intel-graphics:
     plugin: nil
-    build-packages:
-      - wget
-    override-build: |
-      mkdir -p neo
-      cd neo
-      # Install Intel graphics compiler and compute runtime
-      # This is required to enable GPU support for OpenVINO
-      # https://docs.openvino.ai/2024/get-started/configurations/configurations-intel-gpu.html
-      wget https://github.com/intel/intel-graphics-compiler/releases/download/v2.5.6/intel-igc-core-2_2.5.6+18417_amd64.deb
-      wget https://github.com/intel/intel-graphics-compiler/releases/download/v2.5.6/intel-igc-opencl-2_2.5.6+18417_amd64.deb
-      wget https://github.com/intel/compute-runtime/releases/download/24.52.32224.5/intel-level-zero-gpu_1.6.32224.5_amd64.deb
-      wget https://github.com/intel/compute-runtime/releases/download/24.52.32224.5/intel-opencl-icd_24.52.32224.5_amd64.deb
-      wget https://github.com/intel/compute-runtime/releases/download/24.52.32224.5/libigdgmm12_22.5.5_amd64.deb
-      dpkg --root=$CRAFT_PART_INSTALL --force-all -i *.deb
-      # update paths to the Intel Installable Client Drivers (ICDs) for OpenCL
-      intel_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel.icd
-      intel_icd_so_path=$(cat ${intel_icd})
-      base_path="/snap/${SNAPCRAFT_PROJECT_NAME}/current"
-      echo "${base_path}""${intel_icd_so_path}" > "${intel_icd}"
-      intel_legacy1_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel_legacy1.icd
-      if [ -f ${intel_legacy1_icd} ]; then
-        intel_legacy1_icd_so_path=$(cat ${intel_legacy1_icd})
-        echo "${base_path}""${intel_legacy1_icd_so_path}" > "${intel_legacy1_icd}"
-      fi
-      # fix broken sym links
-      cd "${CRAFT_PART_INSTALL}"
-      ln -sf "${base_path}"/usr/bin/ocloc-24.39.1 etc/alternatives/ocloc
-      ln -sf "${base_path}"/etc/alternatives/ocloc usr/bin/ocloc
-      craftctl default
+    stage-packages:
+      - libigc-dev
+      - libigc-tools
+      - libigc2
+      - libigdfcl-dev
+      - libigdfcl2
+      - intel-ocloc
+      - intel-ocloc-dev
+      - intel-opencl-icd
+      - libze1
+      - libze-dev
+      - libze-intel-gpu-dev
+      - libze-intel-gpu1
+      - libigdgmm12
+      - libigdgmm-dev
 
   command-chain-openvino:
     plugin: dump
