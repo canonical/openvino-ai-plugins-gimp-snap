@@ -22,7 +22,6 @@ layout:
 package-repositories:
   - type: apt
     ppa: kobuk-team/intel-graphics
-    priority: prefer
     key-id: 0C0E6AF955CE463C03FC51574D098D70AFBE5E1F
 
 # the recommended mountpoint for the content is /openvino-ai-plugins-gimp
@@ -62,8 +61,7 @@ apps:
       - network # for downloading models
       - openvino-libs # OpenVINO runtime
     environment:
-      # Intel OpenCL libs install to /usr/local/lib
-      LD_LIBRARY_PATH: $SNAP/npu-libs:$SNAP/usr/local/lib:$LD_LIBRARY_PATH
+      LD_LIBRARY_PATH: $SNAP/npu-libs:$LD_LIBRARY_PATH
       PYTHONPATH: $SNAP/lib/python3.12/site-packages:$PYTHONPATH
       OCL_ICD_VENDORS: $SNAP/etc/OpenCL/vendors
 
@@ -71,15 +69,12 @@ parts:
   gimp-plugins:
     source-type: git
     source: https://github.com/intel/openvino-ai-plugins-gimp
-    source-tag: 3.0.0
+    source-tag: 3.1.2
     plugin: python
     python-requirements:
       - ./requirements.txt
     override-pull: |
       craftctl default
-      # remove openvino dependency since it is mounted from content producer snap
-      sed -i '/\"openvino\"/d' ./setup.py
-      sed -i '/openvino==/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
     override-build: |
       craftctl default
@@ -92,6 +87,8 @@ parts:
       chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/stable_diffusion_ov/stable_diffusion_ov.py
       chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/semseg_ov/semseg_ov.py
       chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/superresolution_ov/superresolution_ov.py
+    build-environment:
+      - PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
     stage-packages:
       - python3-minimal # python interpreter
       - python3.12-minimal # python interpreter
@@ -107,6 +104,10 @@ parts:
       - git # plugin version displayed in GIMP by running "git describe"
     stage:
       - -lib/python3.12/site-packages/torch/lib/libtorchbind_test.so
+      # TODO: build openvino-genai from source, linking against
+      #       openvino-toolkit-2404 in latest/edge (2025.2.0)
+      #- -lib/python3.12/site-packages/openvino
+      #- -lib/python3.12/site-packages/openvino_telemetry
       - -usr/lib/x86_64-linux-gnu/libGLU.so.1.3.1
       - -usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
       - -usr/lib/x86_64-linux-gnu/libicuio.so.74.2
@@ -148,7 +149,7 @@ parts:
     plugin: dump
     source-type: git
     source: https://github.com/canonical/openvino-toolkit-snap.git
-    source-tag: 2024.6.0-4
+    source-tag: 2025.2.0-amd64-rev30
     stage:
       - command-chain/openvino-launch
 
