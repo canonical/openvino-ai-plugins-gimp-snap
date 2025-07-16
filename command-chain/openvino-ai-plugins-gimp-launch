@@ -17,7 +17,10 @@ if grep -qw "GenuineIntel" /proc/cpuinfo; then
     export LD_LIBRARY_PATH="${CONTENT_PATH}"/usr/lib/$(uname -m)-linux-gnu:"${SNAP}"/openvino-ai-plugins-gimp/usr/local/lib:"${LD_LIBRARY_PATH}"
     export PYTHONPATH="${CONTENT_PATH}"/lib/python3.12/site-packages:"${PYTHONPATH}"
     export OCL_ICD_VENDORS="${CONTENT_PATH}"/etc/OpenCL/vendors
+    # GIMP retrieves plugin version from git tags
     export GIT_DIR="${CONTENT_PATH}"/gimp-plugins/.git
+    export GIT_EXEC_PATH="${CONTENT_PATH}"/usr/lib/git-core
+    export GIT_TEMPLATE_DIR="{$CONTENT_PATH}"/usr/share/git-core/templates
     weights_dir="${SNAP}"/openvino-ai-plugins-gimp/weights
   else
     export GIT_DIR="${SNAP}"/gimp-plugins/.git

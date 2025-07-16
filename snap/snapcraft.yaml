@@ -18,6 +18,8 @@ platforms:
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
+  /etc/gitconfig:
+    bind-file: $SNAP_DATA/etc/gitconfig
 
 package-repositories:
   - type: apt
@@ -75,6 +77,10 @@ parts:
       - ./requirements.txt
     override-pull: |
       craftctl default
+      # remove dependencies mounted from openvino-toolkit-2404 content producer snap
+      sed -i '/\"openvino\"/d' ./setup.py
+      sed -i '/\"numpy\"/d' ./setup.py
+      sed -i '/openvino/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
     override-build: |
       craftctl default
@@ -104,10 +110,6 @@ parts:
       - git # plugin version displayed in GIMP by running "git describe"
     stage:
       - -lib/python3.12/site-packages/torch/lib/libtorchbind_test.so
-      # TODO: build openvino-genai from source, linking against
-      #       openvino-toolkit-2404 in latest/edge (2025.2.0)
-      #- -lib/python3.12/site-packages/openvino
-      #- -lib/python3.12/site-packages/openvino_telemetry
       - -usr/lib/x86_64-linux-gnu/libGLU.so.1.3.1
       - -usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
       - -usr/lib/x86_64-linux-gnu/libicuio.so.74.2
