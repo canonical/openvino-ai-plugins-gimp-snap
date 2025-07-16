@@ -18,8 +18,6 @@ platforms:
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
-  /etc/gitconfig:
-    bind-file: $SNAP_DATA/etc/gitconfig
 
 package-repositories:
   - type: apt
