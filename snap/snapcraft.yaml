@@ -131,6 +131,8 @@ parts:
       - -usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0
       - -usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
       - -usr/lib/x86_64-linux-gnu/libicui18n.so.74.2
+    organize:
+      bin/optimum-cli: usr/bin/optimum-cli
 
   intel-graphics:
     plugin: nil
