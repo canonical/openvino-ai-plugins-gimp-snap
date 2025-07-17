@@ -18,6 +18,8 @@ platforms:
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
+  /etc/gitconfig:
+    bind-file: $SNAP_DATA/etc/gitconfig
 
 package-repositories:
   - type: apt
@@ -64,6 +66,9 @@ apps:
       LD_LIBRARY_PATH: $SNAP/npu-libs:$LD_LIBRARY_PATH
       PYTHONPATH: $SNAP/lib/python3.12/site-packages:$PYTHONPATH
       OCL_ICD_VENDORS: $SNAP/etc/OpenCL/vendors
+      GIT_DIR: $SNAP/gimp-plugins/.git
+      GIT_EXEC_PATH: $SNAP/usr/lib/git-core
+      GIT_TEMPLATE_DIR: $SNAP/usr/share/git-core/templates
 
 parts:
   gimp-plugins:
@@ -129,6 +134,18 @@ parts:
 
   intel-graphics:
     plugin: nil
+    override-build: |
+      craftctl default
+      # update paths to the Intel Installable Client Drivers (ICDs) for OpenCL
+      intel_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel.icd
+      intel_icd_so_path=$(cat ${intel_icd})
+      base_path="/snap/${SNAPCRAFT_PROJECT_NAME}/current"
+      echo "${base_path}""${intel_icd_so_path}" > "${intel_icd}"
+      intel_legacy1_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel_legacy1.icd
+      if [ -f ${intel_legacy1_icd} ]; then
+        intel_legacy1_icd_so_path=$(cat ${intel_legacy1_icd})
+        echo "${base_path}""${intel_legacy1_icd_so_path}" > "${intel_legacy1_icd}"
+      fi
     stage-packages:
       - libigc-dev
       - libigc-tools

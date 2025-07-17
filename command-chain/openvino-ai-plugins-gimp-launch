@@ -23,7 +23,6 @@ if grep -qw "GenuineIntel" /proc/cpuinfo; then
     export GIT_TEMPLATE_DIR="${CONTENT_PATH}"/usr/share/git-core/templates
     weights_dir="${CONTENT_PATH}"/weights
   else
-    export GIT_DIR="${SNAP}"/gimp-plugins/.git
     weights_dir="${SNAP}"/weights
   fi
 
