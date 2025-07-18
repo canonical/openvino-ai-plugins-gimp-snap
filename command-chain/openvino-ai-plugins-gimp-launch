@@ -11,7 +11,7 @@ if grep -qw "GenuineIntel" /proc/cpuinfo; then
   if [ "${SNAP_NAME}" != "openvino-ai-plugins-gimp" ]; then
     CONTENT_PATH="${SNAP}"/openvino-ai-plugins-gimp
     if [ ! -d "${CONTENT_PATH}" ]; then
-      echo "Warning: ${CONTENT_PATH} not present inside ${SNAP_NAME} snap. Please install the snap using 'sudo snap install openvino-ai-plugins-gimp --beta' and restart the application."
+      echo "Warning: ${CONTENT_PATH} not present inside ${SNAP_NAME} snap. Please install the snap using 'sudo snap install openvino-ai-plugins-gimp' and restart the application."
     fi
     export PATH="${PATH}":"${CONTENT_PATH}"/usr/bin:"${CONTENT_PATH}"/bin
     export LD_LIBRARY_PATH="${CONTENT_PATH}"/usr/lib/$(uname -m)-linux-gnu:"${LD_LIBRARY_PATH}"
