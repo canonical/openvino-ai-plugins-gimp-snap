@@ -224,7 +224,7 @@ command:
   echo "1 0" | openvino-ai-plugins-gimp.model-setup
   set -e
   set -o pipefail
-  if echo "0" | openvino-ai-plugins-gimp.model-setup | grep -q "Stable Diffusion 1.5 Square (Installed)"; then
+  if echo "0" | openvino-ai-plugins-gimp.model-setup | grep "Stable Diffusion 1.5 Square (Installed)"; then
     echo "Test success: installed stable diffusion 1.5 square model using model-setup application."
   else
     >&2 echo "Test failure: stable diffusion 1.5 square model not installed."
