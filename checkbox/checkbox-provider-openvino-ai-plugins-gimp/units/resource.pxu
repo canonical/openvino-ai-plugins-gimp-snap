@@ -1,0 +1,23 @@
+id: host_npu
+category_id: openvino-plugins
+plugin: resource
+_description: Creates resource describing if NPU is available on the host
+estimated_duration: 2s
+command:
+  if ls /dev/accel/accel* > /dev/null 2>&1 ; then
+    echo "state: present"
+  else
+    echo "state: not-present"
+  fi
+
+id: host_gpu
+category_id: openvino-plugins
+plugin: resource
+_description: Creates resource describing if GPU is available on the host
+estimated_duration: 2s
+command:
+  if ls /dev/dri/render* > /dev/null 2>&1 ; then
+    echo "state: present"
+  else
+    echo "state: not-present"
+  fi

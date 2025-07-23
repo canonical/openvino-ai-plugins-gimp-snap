@@ -1,0 +1,4 @@
+unit: category
+id: openvino-plugins
+_name: OpenVINO AI Plugins for GIMP validation
+

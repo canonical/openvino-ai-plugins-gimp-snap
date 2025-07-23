@@ -1,0 +1,12 @@
+id: openvino-ai-plugins-gimp
+unit: test plan
+_name: OpenVINO AI Plugins for GIMP tests
+include:
+    host/.*
+    gimp/.*
+bootstrap_include:
+    com.canonical.certification::executable
+    com.canonical.certification::snap
+    com.canonical.certification::host_npu
+    com.canonical.certification::host_gpu
+
