@@ -1,0 +1,60 @@
+job_queue: REPLACE_QUEUE
+output_timeout: 7200
+provision_data:
+  url: REPLACE_IMAGE_URL
+test_data:
+  attachments:
+    - local: REPLACE_ATTACHMENT
+      agent: "checkbox-openvino-ai-plugins-gimp.snap"
+    - local: ".github/testflinger/set-device-access.sh"
+      agent: "set-device-access.sh"
+  test_cmds: |
+
+    set -e
+
+    # retrieve the tools installer
+    curl -Ls -o install_tools.sh https://raw.githubusercontent.com/canonical/hwcert-jenkins-tools/main/install_tools.sh
+    # install the scriptlets and other tools on the agent and the device, as necessary
+    export TOOLS_PATH=tools
+    source install_tools.sh $TOOLS_PATH
+
+    # ensure device is available before continuing
+    wait_for_ssh --allow-degraded
+
+    echo
+    echo "====== TARGET DEVICE CONNECTION INFO ======"
+    echo
+    echo DEVICE_IP: ubuntu@$DEVICE_IP
+    echo
+    echo "==========================================="
+    echo
+
+    echo
+    echo "========== TARGET DEVICE OS INFO =========="
+    echo
+    echo "*** OS Release ***"
+    echo
+    _run lsb_release -a
+    echo
+    echo "*** Kernel ***"
+    echo
+    _run uname -a
+    echo
+    echo "==========================================="
+    echo
+
+    # Avoid GPG errors on old unsupported versions of Chrome, which we don't test anyway
+    _run sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+
+    _run sudo snap refresh
+    _run sudo snap install openvino-ai-plugins-gimp --channel latest/edge
+
+    _run sudo snap install checkbox24
+    _put attachments/test/checkbox-openvino-ai-plugins-gimp.snap :/home/ubuntu/checkbox-openvino-ai-plugins-gimp.snap
+    _run sudo snap install --dangerous --classic /home/ubuntu/checkbox-openvino-ai-plugins-gimp.snap
+
+    _put attachments/test/set-device-access.sh :/home/ubuntu/set-device-access.sh
+
+    _run checkbox-openvino-toolkit-2404.install-full-deps
+    _run sudo bash set-device-access.sh
+    _run checkbox-openvino-ai-plugins-gimp.test-runner-automated
