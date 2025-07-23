@@ -57,6 +57,8 @@ parts:
       # See: https://snapcraft.io/docs/linters-classic
       # This patches the python interpreter to allow use of the dynamic linker from core24
     stage-packages:
+      - jq
+      - intel-gpu-tools
       - python3-minimal
       - python3.12-minimal
       # This provides a python interpreter for checkbox to use that works properly with classic confinement

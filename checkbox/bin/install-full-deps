@@ -14,7 +14,6 @@ then
   exit 1
 fi
 
-sudo DEBIAN_FRONTEND=noninteractive apt install -y intel-gpu-tools jq
 sudo snap install intel-npu-driver
 # install from latest/edge for now because the latest release (which the ai plugins depend on)
 # has not yet been promoted beyond this channel
