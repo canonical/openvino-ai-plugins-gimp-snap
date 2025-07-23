@@ -94,8 +94,8 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          revision=$(snap info openvino-toolkit-2404 | grep latest/edge | cut -d "(" -f2 | cut -d ")" -f1)
-          version=$(snap info openvino-toolkit-2404 | grep latest/edge | awk '{print $2}')
+          revision=$(snap info openvino-ai-plugins-gimp | grep latest/edge | cut -d "(" -f2 | cut -d ")" -f1)
+          version=$(snap info openvino-ai-plugins-gimp | grep latest/edge | awk '{print $2}')
           tag_name="${version}-rev${revision}"
           git tag -a "${tag_name}" -m "Revision ${revision}"
           git push origin "${tag_name}"
