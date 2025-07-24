@@ -96,7 +96,7 @@ jobs:
           revision=$(snap info openvino-ai-plugins-gimp | grep latest/edge | cut -d "(" -f2 | cut -d ")" -f1)
           version=$(snap info openvino-ai-plugins-gimp | grep latest/edge | awk '{print $2}')
           tag_name="${version}-rev${revision}"
-          if git ls-remote --tags origin "refs/tags/${tag_name}"; then
+          if git ls-remote --tags origin | grep -q "refs/tags/${tag_name}"; then
             echo "Tag ${tag_name} already exists in remote repo. Doing nothing."
           else
             git tag -a "${tag_name}" -m "Revision ${revision}"
