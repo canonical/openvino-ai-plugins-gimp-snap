@@ -56,5 +56,5 @@ test_data:
     _put attachments/test/set-device-access.sh :/home/ubuntu/set-device-access.sh
 
     _run checkbox-openvino-ai-plugins-gimp.install-full-deps
-    _run sudo bash set-device-access.sh
+    _run sudo bash /home/ubuntu/set-device-access.sh
     _run checkbox-openvino-ai-plugins-gimp.test-runner-automated

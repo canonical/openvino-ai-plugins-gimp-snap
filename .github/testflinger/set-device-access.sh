@@ -15,5 +15,5 @@ fi
 usermod -a -G render ubuntu
 # Newer versions of Ubuntu ship Udev rules which handle this,
 # but 22.04 does not
-chown root:render /dev/accel/accel0
-chmod g+rw /dev/accel/accel0
+chown root:render /dev/accel/accel*
+chmod g+rw /dev/accel/accel*
