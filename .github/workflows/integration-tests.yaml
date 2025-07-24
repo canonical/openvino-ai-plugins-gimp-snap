@@ -12,7 +12,6 @@ on:
       - '.github/testflinger/**'
     branches:
       - main
-      - frenchwr/bump-to-version-3.1.2 # temporary
   workflow_dispatch:
 
 concurrency:
