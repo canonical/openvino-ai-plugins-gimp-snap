@@ -85,6 +85,7 @@ parts:
       sed -i '/\"numpy\"/d' ./setup.py
       sed -i '/openvino/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
+      git apply ${CRAFT_PROJECT_DIR}/patches/001-optimum-cli-from-path.patch
     override-build: |
       craftctl default
       mkdir -p ${CRAFT_PART_INSTALL}/weights ${CRAFT_PART_INSTALL}/gimp-plugins
