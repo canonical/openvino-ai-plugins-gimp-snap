@@ -1,0 +1,232 @@
+id: host/NpuDevicePermissions
+category_id: openvino-plugins
+flags: simple
+_summary: Check that user has read and write access to NPU char device node(s)
+estimated_duration: 2s
+requires:
+  host_npu.state == 'present'
+command:
+  for node in $(ls /dev/accel/accel*); do
+    echo "[INFO] Checking node ${node}"
+    if ! test -r ${node} ; then
+      >&2 echo "Test failure: user must have read permissions to ${node}"
+      >&2 echo "Please run 'sudo usermod -a -G render $USER' then log out and back in"
+      >&2 echo "Then run 'sudo chown root:render ${node} && sudo chmod g+rw ${node}'"
+      exit 1
+    fi
+    if ! test -w ${node} ; then
+      >&2 echo "Test failure: user must have write permissions to ${node}"
+      >&2 echo "Please run 'sudo usermod -a -G render $USER' then log out and back in"
+      >&2 echo "Then run 'sudo chown root:render ${node} && sudo chmod g+rw ${node}'"
+      exit 1
+    fi
+  done
+  echo "Test success: user has read and write access to NPU device node(s) $(ls /dev/accel/accel*)"
+
+id: host/GpuDevicePermissions
+category_id: openvino-plugins
+flags: simple
+_summary: Check that user has read and write access to GPU char device node(s)
+estimated_duration: 2s
+requires:
+  host_gpu.state == 'present'
+command:
+  for node in $(ls /dev/dri/render*); do
+    echo "[INFO] Checking node ${node}"
+    if ! test -r ${node} ; then
+      >&2 echo "Test failure: user must have read permissions to ${node}"
+      >&2 echo "Please run 'sudo usermod -a -G render $USER' then log out and back in"
+      >&2 echo "Then run 'sudo chown root:render ${node} && sudo chmod g+rw ${node}'"
+      exit 1
+    fi
+    if ! test -w ${node} ; then
+      >&2 echo "Test failure: user must have write permissions to ${node}"
+      >&2 echo "Please run 'sudo usermod -a -G render $USER' then log out and back in"
+      >&2 echo "Then run 'sudo chown root:render ${node} && sudo chmod g+rw ${node}'"
+      exit 1
+    fi
+  done
+  echo "Test success: user has read and write access to GPU device node(s) $(ls /dev/dri/render*)"
+
+id: host/IntelGpuAvail
+category_id: openvino-plugins
+flags: simple
+_summary: Verify that an Intel GPU is available on the host
+estimated_duration: 2s
+requires: 
+  executable.name == 'intel_gpu_top'
+  host_gpu.state == 'present'
+command:
+  result=$(intel_gpu_top -L)
+  if [[ ${result} == *"pci:vendor=8086"* ]]; then
+      echo "Test success: Intel GPU available on host: ${result}"
+  else
+      >&2 echo "Test failure: "intel_gpu_top -L" reports no Intel GPUs: ${result}"
+      exit 1
+  fi
+
+id: gimp/clean_install_dirs
+category_id: openvino-plugins
+flags: simple
+_summary: Ensure gimp plugin dirs do not yet exist
+estimated_duration: 2s
+command:
+  CONFIG_FILE=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/gimp_openvino_config.json
+  if [ -f ${CONFIG_FILE} ]; then
+    >&2 echo "Test failure: ${CONFIG_FILE} already exists!"
+    >&2 echo "In order to run the GIMP plugin tests you must first remove this file."
+    exit 1
+  fi
+  MODELS_DIR=${SNAP_REAL_HOME}/.local/share/openvino-ai-plugins-gimp
+  if [ -d ${MODELS_DIR} ]; then
+    >&2 echo "Test failure: ${MODELS_DIR} already exists!"
+    >&2 echo "In order to run the GIMP plugin tests you must first remove this directory."
+    exit 1
+  fi
+  echo "Test success: ${CONFIG_FILE} and ${MODELS_DIR} do not exist."
+
+id: gimp/model_setup_empty_run
+category_id: openvino-plugins
+flags: simple
+_summary: Check that model setup app runs successfully
+estimated_duration: 5s
+requires:
+  executable.name == 'openvino-ai-plugins-gimp.model-setup'
+depends:
+  gimp/clean_install_dirs
+command:
+  # reset environment vars to prevent python environment conflicts
+  export -n PYTHONHOME PYTHONPATH PYTHONUSERBASE
+  # menu item 0 : exit stable diffusion model setup
+  echo "0" | openvino-ai-plugins-gimp.model-setup
+  echo "Test success: model setup application ran successfully."
+
+id: gimp/semseg_models_installed
+category_id: openvino-plugins
+flags: simple
+_summary: Check that semantic segmentation models are installed
+estimated_duration: 2s
+depends:
+  gimp/model_setup_empty_run
+command:
+  SEMSEG_DIR=${SNAP_REAL_HOME}/.local/share/openvino-ai-plugins-gimp/weights/semseg-ov
+  file_cnt=$(ls ${SEMSEG_DIR} | wc -l)
+  if [ ${file_cnt} != "5" ]; then
+    >&2 echo "Test failure: expected 5 files in ${SEMSEG_DIR}, got ${file_cnt} instead."
+    exit 1
+  fi
+  echo "Test success: semantic segmentation models found in expected location."
+
+id: gimp/superresolution_models_installed
+category_id: openvino-plugins
+flags: simple
+_summary: Check that super resolution models are installed
+estimated_duration: 2s
+depends:
+  gimp/model_setup_empty_run
+command:
+  SUPERRES_DIR=${SNAP_REAL_HOME}/.local/share/openvino-ai-plugins-gimp/weights/superresolution-ov
+  file_cnt=$(ls ${SUPERRES_DIR} | wc -l)
+  if [ ${file_cnt} != "7" ]; then
+    >&2 echo "Test failure: expected 7 files in ${SUPERRES_DIR}, got ${file_cnt} instead."
+    exit 1
+  fi
+  echo "Test success: super resolution models found in expected location."
+
+id: gimp/gimp_openvino_config_installed
+category_id: openvino-plugins
+flags: simple
+_summary: Check that the GIMP OpenVINO config is installed
+estimated_duration: 2s
+depends:
+  gimp/model_setup_empty_run
+command:
+  CONFIG_FILE=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/gimp_openvino_config.json
+  if [ ! -f ${CONFIG_FILE} ]; then
+    >&2 echo "Test failure: ${CONFIG_FILE} does not exist!"
+    exit 1
+  fi
+  echo "Test success: config for OpenVINO AI Plugins for GIMP found in expected location."
+
+id: gimp/devices_avail_cpu
+category_id: openvino-plugins
+flags: simple
+_summary: Check that we can use a CPU with the OpenVINO AI plugins for GIMP
+estimated_duration: 5s
+requires:
+  executable.name == 'jq'
+depends:
+  gimp/model_setup_empty_run
+  gimp/gimp_openvino_config_installed
+command:
+  CONFIG_FILE=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/gimp_openvino_config.json
+  supported_devices=$(cat ${CONFIG_FILE} | jq '.supported_devices[]')
+  if ! echo ${supported_devices} | grep -qw "CPU" ; then
+    >&2 echo "Test failure: CPU not supported by OpenVINO plugins for GIMP."
+    exit 1
+  fi
+  printf "Test success: found CPU in supported devices:\n${supported_devices}"
+
+id: gimp/devices_avail_gpu
+category_id: openvino-plugins
+flags: simple
+_summary: Check that we can use a GPU with the OpenVINO AI plugins for GIMP
+estimated_duration: 5s
+requires:
+  executable.name == 'jq'
+  host_gpu.state == 'present'
+depends:
+  gimp/model_setup_empty_run
+  gimp/gimp_openvino_config_installed
+command:
+  CONFIG_FILE=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/gimp_openvino_config.json
+  supported_devices=$(cat ${CONFIG_FILE} | jq '.supported_devices[]')
+  if ! echo ${supported_devices} | grep -qw "GPU" ; then
+    >&2 echo "Test failure: GPU not supported by OpenVINO plugins for GIMP."
+    exit 1
+  fi
+  printf "Test success: found GPU in supported devices:\n${supported_devices}"
+
+id: gimp/devices_avail_npu
+category_id: openvino-plugins
+flags: simple
+_summary: Check that we can use a NPU with the OpenVINO AI plugins for GIMP
+estimated_duration: 5s
+requires:
+  executable.name == 'jq'
+  host_npu.state == 'present'
+depends:
+  gimp/model_setup_empty_run
+  gimp/gimp_openvino_config_installed
+command:
+  CONFIG_FILE=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/gimp_openvino_config.json
+  supported_devices=$(cat ${CONFIG_FILE} | jq '.supported_devices[]')
+  if ! echo ${supported_devices} | grep -qw "NPU" ; then
+    >&2 echo "Test failure: NPU not supported by OpenVINO plugins for GIMP."
+    exit 1
+  fi
+  printf "Test success: found NPU in supported devices:\n${supported_devices}"
+
+id: gimp/model_setup_install_square_model
+category_id: openvino-plugins
+flags: simple
+_summary: Check that model setup app can install a model
+estimated_duration: 5m
+requires:
+  executable.name == 'openvino-ai-plugins-gimp.model-setup'
+depends:
+  gimp/clean_install_dirs
+command:
+  # reset environment vars to prevent python environment conflicts
+  export -n PYTHONHOME PYTHONPATH PYTHONUSERBASE
+  # menu item 1 : install Stable Diffusion 1.5 Square
+  # menu item 0 : exit stable diffusion model setup
+  echo "1 0" | openvino-ai-plugins-gimp.model-setup
+  set -e
+  set -o pipefail
+  if echo "0" | openvino-ai-plugins-gimp.model-setup | grep "Stable Diffusion 1.5 Square (Installed)"; then
+    echo "Test success: installed stable diffusion 1.5 square model using model-setup application."
+  else
+    >&2 echo "Test failure: stable diffusion 1.5 square model not installed."
+    exit 1
+  fi

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# wrapper around the checkbox-cli
+exec /snap/checkbox24/current/bin/checkbox-cli "$@"

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+optional_arg_A=$1
+optional_arg_B=$2
+if [ "${optional_arg_A}" = "--install_from_store" ] || [ "${optional_arg_B}" = "--install_from_store" ]; then
+  echo "Installing openvino-ai-plugins-gimp from latest/stable in the Snap Store."
+  sudo snap install openvino-ai-plugins-gimp
+fi
+
+if ! snap list openvino-ai-plugins-gimp 2>&1 >/dev/null
+then
+  echo "Error: openvino-ai-plugins-gimp snap is not installed!"
+  echo "Either install the openvino-ai-plugins-gimp snap locally or from the store (using --install_from_store)"
+  exit 1
+fi
+
+sudo snap install intel-npu-driver
+# install from latest/edge for now because the latest release (which the ai plugins depend on)
+# has not yet been promoted beyond this channel
+sudo snap install openvino-toolkit-2404 --channel latest/edge
+
+if [ "${optional_arg_A}" = "--clean_plugin_dirs" ] || [ "${optional_arg_B}" = "--clean_plugin_dirs" ]; then
+  CONFIG_FILE=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/gimp_openvino_config.json
+  MODEL_DIR=${SNAP_REAL_HOME}/.local/share/openvino-ai-plugins-gimp
+  echo "Removing ${CONFIG_FILE} and ${MODEL_DIR} for the next checkbox run."
+  rm -f ${CONFIG_FILE}
+  rm -rf ${MODEL_DIR}
+fi
