@@ -17,7 +17,7 @@ platforms:
 
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl:
-    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
+    bind: $SNAP/openvino-gimp/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
   /etc/gitconfig:
     bind-file: $SNAP_DATA/etc/gitconfig
 
@@ -26,13 +26,18 @@ package-repositories:
     ppa: kobuk-team/intel-graphics
     key-id: 0C0E6AF955CE463C03FC51574D098D70AFBE5E1F
 
-# the recommended mountpoint for the content is /openvino-ai-plugins-gimp
 slots:
-  openvino-ai-plugins-gimp-libs:
+  gimp-plugins:
     interface: content
-    content: openvino-ai-plugins-gimp-2404
-    read:
-      - /
+    content: gimp-plugins
+    source:
+      read:
+        - $SNAP/semseg_ov
+        - $SNAP/stable_diffusion_ov
+        - $SNAP/superresolution_ov
+        - $SNAP/openvino_utils
+        - $SNAP/openvino-gimp
+        - $SNAP/wrappers-openvino-gimp
 
 plugs:
   intel-npu:
@@ -53,8 +58,8 @@ plugs:
 
 apps:
   model-setup:
-    command-chain: ["command-chain/openvino-launch", "command-chain/openvino-ai-plugins-gimp-launch"]
-    command: usr/bin/python3 $SNAP/model_setup.py
+    command-chain: ["command-chain/source-content-producers"]
+    command: openvino-gimp/usr/bin/python3 $SNAP/openvino-gimp/model_setup.py
     plugs:
       - dot-local-share-openvino-ai-plugins-gimp # models stored in home directory
       - opengl # Intel GPU access (device nodes)
@@ -62,13 +67,6 @@ apps:
       - npu-libs # Intel NPU access (libs)
       - network # for downloading models
       - openvino-libs # OpenVINO runtime
-    environment:
-      LD_LIBRARY_PATH: $SNAP/npu-libs:$LD_LIBRARY_PATH
-      PYTHONPATH: $SNAP/lib/python3.12/site-packages:$PYTHONPATH
-      OCL_ICD_VENDORS: $SNAP/etc/OpenCL/vendors
-      GIT_DIR: $SNAP/gimp-plugins/.git
-      GIT_EXEC_PATH: $SNAP/usr/lib/git-core
-      GIT_TEMPLATE_DIR: $SNAP/usr/share/git-core/templates
 
 parts:
   gimp-plugins:
@@ -88,16 +86,16 @@ parts:
       git apply ${CRAFT_PROJECT_DIR}/patches/001-optimum-cli-from-path.patch
     override-build: |
       craftctl default
-      mkdir -p ${CRAFT_PART_INSTALL}/weights ${CRAFT_PART_INSTALL}/gimp-plugins
+      mkdir -p ${CRAFT_PART_INSTALL}/weights
       cp -r weights/* ${CRAFT_PART_INSTALL}/weights/
       cp model_setup.py ${CRAFT_PART_INSTALL}
-      cp -r gimpopenvino/plugins/* ${CRAFT_PART_INSTALL}/gimp-plugins/
-      rm ${CRAFT_PART_INSTALL}/gimp-plugins/__init__.py
+      cp -r gimpopenvino/plugins/* ${CRAFT_PART_INSTALL}
+      rm ${CRAFT_PART_INSTALL}/__init__.py
       # plugins set plugin version from git tags, so copy repo metadata into snap
-      cp -r .git ${CRAFT_PART_INSTALL}/gimp-plugins/
-      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/stable_diffusion_ov/stable_diffusion_ov.py
-      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/semseg_ov/semseg_ov.py
-      chmod +x ${CRAFT_PART_INSTALL}/gimp-plugins/superresolution_ov/superresolution_ov.py
+      cp -r .git ${CRAFT_PART_INSTALL}/openvino_utils/
+      chmod +x ${CRAFT_PART_INSTALL}/stable_diffusion_ov/stable_diffusion_ov.py
+      chmod +x ${CRAFT_PART_INSTALL}/semseg_ov/semseg_ov.py
+      chmod +x ${CRAFT_PART_INSTALL}/superresolution_ov/superresolution_ov.py
     build-environment:
       - PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
     stage-packages:
@@ -134,7 +132,16 @@ parts:
       - -usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0
       - -usr/lib/x86_64-linux-gnu/libicui18n.so.74.2
     organize:
-      bin/optimum-cli: usr/bin/optimum-cli
+      bin: openvino-gimp/bin
+      etc: openvino-gimp/etc
+      include: openvino-gimp/include
+      lib: openvino-gimp/lib
+      lib64: openvino-gimp/lib64
+      model_setup.py: openvino-gimp/model_setup.py
+      share: openvino-gimp/share
+      usr: openvino-gimp/usr
+      var: openvino-gimp/var
+      weights: openvino-gimp/weights
 
   intel-graphics:
     plugin: nil
@@ -143,7 +150,7 @@ parts:
       # update paths to the Intel Installable Client Drivers (ICDs) for OpenCL
       intel_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel.icd
       intel_icd_so_path=$(cat ${intel_icd})
-      base_path="/snap/${SNAPCRAFT_PROJECT_NAME}/current"
+      base_path="/snap/${SNAPCRAFT_PROJECT_NAME}/current/openvino-gimp"
       echo "${base_path}""${intel_icd_so_path}" > "${intel_icd}"
       intel_legacy1_icd="${CRAFT_PART_INSTALL}"/etc/OpenCL/vendors/intel_legacy1.icd
       if [ -f ${intel_legacy1_icd} ]; then
@@ -165,20 +172,20 @@ parts:
       - libze-intel-gpu1
       - libigdgmm12
       - libigdgmm-dev
-
-  command-chain-openvino:
-    plugin: dump
-    source-type: git
-    source: https://github.com/canonical/openvino-toolkit-snap.git
-    source-tag: 2025.2.0-amd64-rev30
-    stage:
-      - command-chain/openvino-launch
+    organize:
+      bin: openvino-gimp/bin
+      etc: openvino-gimp/etc
+      include: openvino-gimp/include
+      lib: openvino-gimp/usr/lib
+      share: openvino-gimp/share
+      usr: openvino-gimp/usr
 
   command-chain-openvino-ai-plugins-gimp:
     plugin: dump
     source: command-chain/
     organize:
-      '*': command-chain/
+      source-content-producers: command-chain/source-content-producers
+      openvino-ai-plugins-gimp.env: wrappers-openvino-gimp/openvino-ai-plugins-gimp.env
 
 lint:
   ignore:
@@ -187,13 +194,27 @@ lint:
       # by the linter because they are not
       # explicitly linked to any binary or
       # shared object
-      - openvino/usr/runtime/3rdparty/tbb/lib/libtbbbind*
-      - openvino/usr/runtime/3rdparty/tbb/lib/libtbbmalloc*
-      - openvino/usr/runtime/3rdparty/tbb/lib/libhwloc*
-      - usr/lib/x86_64-linux-gnu/libva.so.*
-      - usr/lib/x86_64-linux-gnu/libze_intel_gpu.so.*
-      - usr/local/lib/libiga64.so*
-      - usr/local/lib/libigc.so.*
-      - usr/local/lib/libigdfcl.so.*
-      - usr/local/lib/libopencl-clang*
-      - lib/python3.12/site-packages/torch/lib/libtorch_global_deps.so
+      - openvino-gimp/lib/python3.12/site-packages/torch/*
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libGLU.so.1.3.1
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libOpenCL.so.1.0.0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libicuio.so.74.2
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libicutest.so.74.2
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libiga64.so.2.16.0+0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libigc.so.2.16.0+0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libigdfcl.so.2.16.0+0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libva.so.2.2200.0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libvulkan.so.1.3.275
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libz3.so.4
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libze_intel_gpu.so.1.6.34666
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libze_loader.so.1.23.1
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libze_tracing_layer.so.1.23.1
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libze_validation_layer.so.1.23.1
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libOpenGL.so.0.0.0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libXxf86vm.so.1.0.0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libicutu.so.74.2
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libopencl-clang.so.15
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0.0.0
+      - openvino-gimp/usr/lib/x86_64-linux-gnu/libicui18n.so.74.2

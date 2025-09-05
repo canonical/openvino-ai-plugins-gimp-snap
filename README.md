@@ -9,14 +9,21 @@ Note this snap exists specifically to support the `gimp` snap, and thus is not d
 ### Install dependencies
 
 ```
-sudo snap install intel-npu-driver --beta # for NPU support
-sudo snap install openvino-toolkit-2404 --beta
+sudo snap install intel-npu-driver # for NPU support
+sudo snap install openvino-toolkit-2404
 ```
 
 ### Install from the latest revision in the store
 
 ```
-sudo snap install openvino-ai-plugins-gimp --beta
+sudo snap install openvino-ai-plugins-gimp
+```
+
+### Install GIMP and connect plugins
+
+```
+sudo snap install gimp
+sudo snap connect gimp:gimp-plugins openvino-ai-plugins-gimp:gimp-plugins
 ```
 
 ### Build and install the snap locally
@@ -31,7 +38,7 @@ snapcraft
 sudo snap install --dangerous ./openvino-ai-plugins-gimp_*_amd64.snap
 ```
 
-### Connecting plugs manually
+### Connect plugs manually
 
 Note, these plugs should now all autoconnect so it is no longer necessary to run these commands manually. The commands are still shown below for posterity or troubleshooting purposes.
 
@@ -47,46 +54,6 @@ Additionally, if you are running on an Intel® Core™ Ultra generation CPU cont
 ```
 sudo snap connect openvino-ai-plugins-gimp:intel-npu intel-npu-driver:intel-npu
 sudo snap connect openvino-ai-plugins-gimp:npu-libs intel-npu-driver:npu-libs
-```
-
-### Snap slot
-
-This snap exposes a slot using the content interface to enable the GIMP snap to integrate the Python-based GIMP plugins.
-
-An example snippet for a consuming app's (GIMP) `snapcraft.yaml` may look like:
-
-```yaml
-plugs:
-  openvino-ai-plugins-gimp-libs:
-    interface: content
-    content: openvino-ai-plugins-gimp-2404
-    target: $SNAP/openvino-ai-plugins-gimp
-
-apps:
-  gimp-app:
-    command: ...
-    command-chain:
-      - command-chain/openvino-ai-plugins-gimp-launch
-    plugs:
-      - openvino-ai-plugins-gimp-libs
-
-parts:
-  gimp:
-    ...
-    override-stage: |
-      ...
-      # update gimp's plugin search path so it will pick up plugins mounted over snapd's content interface
-      current_path=$(grep "# (plug-in-path" ${CRAFT_PART_INSTALL}/etc/gimp/2.99/gimprc | cut -d '"' -f2)
-      add_dir=/snap/"${SNAPCRAFT_PROJECT_NAME}"/current/openvino-ai-plugins-gimp/gimp-plugins
-      echo "(plug-in-path \"${current_path}:${add_dir}\")" >> $CRAFT_PART_INSTALL/etc/gimp/2.99/gimprc
-
-  command-chain-openvino-ai-plugins-gimp:
-    plugin: dump
-    source-type: git
-    source: https://github.com/canonical/openvino-ai-plugins-gimp-snap.git
-    source-commit: ...
-    stage:
-      - command-chain/openvino-ai-plugins-gimp-launch
 ```
 
 ## Installing stable diffusion models

@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# Source wrapper script from content producer snaps.
+#
+
+WRAPPER="${SNAP}/wrappers-openvino-gimp/openvino-ai-plugins-gimp.env"
+if [ -f "${WRAPPER}" ]; then
+  source "${WRAPPER}"
+fi
+exec "$@"
