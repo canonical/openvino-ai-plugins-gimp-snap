@@ -47,26 +47,16 @@ plugs:
     interface: content
     content: npu-libs-2404
     target: $SNAP/npu-libs
-  openvino-libs:
-    interface: content
-    content: openvino-libs-2404
-    target: $SNAP/openvino
-  dot-local-share-openvino-ai-plugins-gimp:
-    interface: personal-files
-    write:
-      - $HOME/.local/share/openvino-ai-plugins-gimp
 
 apps:
   model-setup:
     command-chain: ["command-chain/source-content-producers"]
     command: openvino-gimp/usr/bin/python3 $SNAP/openvino-gimp/model_setup.py
     plugs:
-      - dot-local-share-openvino-ai-plugins-gimp # models stored in home directory
       - opengl # Intel GPU access (device nodes)
       - intel-npu # Intel NPU access (device node)
       - npu-libs # Intel NPU access (libs)
       - network # for downloading models
-      - openvino-libs # OpenVINO runtime
 
 parts:
   gimp-plugins:
@@ -111,6 +101,8 @@ parts:
       - libxext6 # opencv-python dep
       - libgomp1 # pytorch dep
       - git # plugin version displayed in GIMP by running "git describe"
+    stage-snaps:
+      - openvino-toolkit-2404/2025/stable
     stage:
       - -lib/python3.12/site-packages/torch/lib/libtorchbind_test.so
       - -usr/lib/x86_64-linux-gnu/libGLU.so.1.3.1
