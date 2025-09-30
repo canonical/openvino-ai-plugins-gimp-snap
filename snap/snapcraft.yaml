@@ -51,7 +51,7 @@ plugs:
 apps:
   model-setup:
     command: openvino-gimp/usr/bin/python3 $SNAP/openvino-gimp/model_setup.py
-    command-chain: [ command-chain/create-working-dirs ]
+    command-chain: [ command-chain/set-runtime-env ]
     plugs:
       - opengl # Intel GPU access (device nodes)
       - intel-npu # Intel NPU access (device node)
@@ -62,7 +62,7 @@ apps:
       LD_LIBRARY_PATH: $SNAP/openvino-gimp/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$LD_LIBRARY_PATH
       PYTHONPATH: $SNAP/openvino-gimp/lib/python3.12/site-packages:$SNAP/openvino-gimp/usr/lib/python3/dist-packages:$PYTHONPATH
       OCL_ICD_VENDORS: $SNAP/openvino-gimp/etc/OpenCL/vendors
-      GIT_DIR: $SNAP/openvino-gimp/openvino_utils/.git
+      GIT_DIR: $SNAP/openvino_utils/.git
       GIT_EXEC_PATH: $SNAP/openvino-gimp/usr/lib/git-core
       GIT_TEMPLATE_DIR: $SNAP/openvino-gimp/usr/share/git-core/templates
 
@@ -191,7 +191,7 @@ parts:
     plugin: dump
     source: command-chain/
     organize:
-      create-working-dirs: command-chain/create-working-dirs
+      set-runtime-env: command-chain/set-runtime-env
 
 lint:
   ignore:

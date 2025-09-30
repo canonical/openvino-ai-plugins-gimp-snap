@@ -1,5 +1,5 @@
 diff --git a/gimpopenvino/install_utils.py b/gimpopenvino/install_utils.py
-index 2c79020..9864806 100644
+index 2c79020..b2232e5 100644
 --- a/gimpopenvino/install_utils.py
 +++ b/gimpopenvino/install_utils.py
 @@ -142,6 +142,25 @@ def get_plugin_version(file_dir=None):
@@ -10,10 +10,10 @@ index 2c79020..9864806 100644
 +    ov_content_dir = f"{snap_env_var}/gimp-plugins/openvino-gimp"
 +    pythonpath_env_var = os.environ.get("PYTHONPATH")
 +    path_env_var = os.environ.get("PATH")
-+    os.environ["GIT_DIR"] = f"{snap_env_var}/gimp-plugins/openvino_utils/.git"
-+    os.environ["GIT_EXEC_PATH"] = f"{ov_content_dir}/usr/lib/git-core"
-+    os.environ["GIT_TEMPLATE_DIR"] = f"{ov_content_dir}/usr/share/git-core/templates"
-+    os.environ["OCL_ICD_VENDORS"] = f"{ov_content_dir}/etc/OpenCL/vendors"
++    os.environ.setdefault("GIT_DIR", f"{snap_env_var}/gimp-plugins/openvino_utils/.git")
++    os.environ.setdefault("GIT_EXEC_PATH", f"{ov_content_dir}/usr/lib/git-core")
++    os.environ.setdefault("GIT_TEMPLATE_DIR", f"{ov_content_dir}/usr/share/git-core/templates")
++    os.environ.setdefault("OCL_ICD_VENDORS", f"{ov_content_dir}/etc/OpenCL/vendors")
 +    os.environ["PYTHONPATH"] = (
 +        f"{pythonpath_env_var}:"
 +        f"{ov_content_dir}/lib/python3.12/site-packages:"

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+mkdir -p "${SNAP_USER_COMMON}"/{mms_tmp,weights}
+
+weights_dir="${SNAP_USER_COMMON}/weights"
+
+python3 -c "from gimpopenvino import install_utils; install_utils.complete_install(repo_weights_dir=r'${weights_dir}')"
+
+exec "$@"
