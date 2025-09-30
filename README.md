@@ -1,6 +1,10 @@
 # Snap for OpenVINO™ AI Plugins for GIMP
 
-This snap is a content producer snap for integrating AI plugins into the GIMP snap.
+This snap is a content producer snap for integrating AI plugins into the GIMP snap. The plugins include:
+
+* Stable Diffusion
+* Super Resolution
+* Semantic Segmentation
 
 ## Instructions for installing and running the snap
 
@@ -21,6 +25,8 @@ sudo usermod -a -G render $USER
 ```
 
 Next log out and log back in for this change to take effect.
+
+Note that the Stable Diffusion plugin requires the use of either an Intel NPU or GPU.
 
 ### Install from the latest revision in the store
 

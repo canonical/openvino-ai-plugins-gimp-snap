@@ -37,7 +37,7 @@ slots:
         - $SNAP/superresolution_ov
         - $SNAP/openvino_utils
         - $SNAP/openvino-gimp
-        - $SNAP/wrappers-openvino-gimp
+        - $SNAP/openvino-gimp.conf
 
 plugs:
   intel-npu:
@@ -50,13 +50,21 @@ plugs:
 
 apps:
   model-setup:
-    command-chain: ["command-chain/source-content-producers"]
     command: openvino-gimp/usr/bin/python3 $SNAP/openvino-gimp/model_setup.py
+    command-chain: [ command-chain/create-working-dirs ]
     plugs:
       - opengl # Intel GPU access (device nodes)
       - intel-npu # Intel NPU access (device node)
       - npu-libs # Intel NPU access (libs)
       - network # for downloading models
+    environment:
+      PATH: $PATH:$SNAP/openvino-gimp/usr/bin:$SNAP/openvino-gimp/bin
+      LD_LIBRARY_PATH: $SNAP/openvino-gimp/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$LD_LIBRARY_PATH
+      PYTHONPATH: $SNAP/openvino-gimp/lib/python3.12/site-packages:$SNAP/openvino-gimp/usr/lib/python3/dist-packages:$PYTHONPATH
+      OCL_ICD_VENDORS: $SNAP/openvino-gimp/etc/OpenCL/vendors
+      GIT_DIR: $SNAP/openvino-gimp/openvino_utils/.git
+      GIT_EXEC_PATH: $SNAP/openvino-gimp/usr/lib/git-core
+      GIT_TEMPLATE_DIR: $SNAP/openvino-gimp/usr/share/git-core/templates
 
 parts:
   gimp-plugins:
@@ -74,6 +82,7 @@ parts:
       sed -i '/openvino/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
       git apply ${CRAFT_PROJECT_DIR}/patches/001-optimum-cli-from-path.patch
+      git apply ${CRAFT_PROJECT_DIR}/patches/002-set-environment-vars-from-plugins.patch
     override-build: |
       craftctl default
       mkdir -p ${CRAFT_PART_INSTALL}/weights
@@ -172,12 +181,17 @@ parts:
       share: openvino-gimp/share
       usr: openvino-gimp/usr
 
-  command-chain-openvino-ai-plugins-gimp:
+  add-ld-library-path:
+    plugin: dump
+    source: openvino-gimp.conf/
+    organize:
+      add-ld-library-path: openvino-gimp.conf/add-ld-library-path
+
+  command-chain:
     plugin: dump
     source: command-chain/
     organize:
-      source-content-producers: command-chain/source-content-producers
-      openvino-ai-plugins-gimp.env: wrappers-openvino-gimp/openvino-ai-plugins-gimp.env
+      create-working-dirs: command-chain/create-working-dirs
 
 lint:
   ignore:
