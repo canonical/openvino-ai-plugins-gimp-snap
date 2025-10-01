@@ -18,8 +18,6 @@ platforms:
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl:
     bind: $SNAP/openvino-gimp/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
-  /etc/gitconfig:
-    bind-file: $SNAP_DATA/etc/gitconfig
 
 package-repositories:
   - type: apt
@@ -62,9 +60,6 @@ apps:
       LD_LIBRARY_PATH: $SNAP/openvino-gimp/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$LD_LIBRARY_PATH
       PYTHONPATH: $SNAP/openvino-gimp/lib/python3.12/site-packages:$SNAP/openvino-gimp/usr/lib/python3/dist-packages:$PYTHONPATH
       OCL_ICD_VENDORS: $SNAP/openvino-gimp/etc/OpenCL/vendors
-      GIT_DIR: $SNAP/openvino_utils/.git
-      GIT_EXEC_PATH: $SNAP/openvino-gimp/usr/lib/git-core
-      GIT_TEMPLATE_DIR: $SNAP/openvino-gimp/usr/share/git-core/templates
 
 parts:
   gimp-plugins:
@@ -83,6 +78,16 @@ parts:
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
       git apply ${CRAFT_PROJECT_DIR}/patches/001-optimum-cli-from-path.patch
       git apply ${CRAFT_PROJECT_DIR}/patches/002-set-environment-vars-from-plugins.patch
+      # plug-ins rely on running git describe --tags at runtime to determine the
+      # plug-in version, which is not straightforward in a snap.
+      raw_version="$(git describe --tags)"
+      if [[ "$raw_version" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)(-([0-9]+)-g[0-9a-f]+)?$ ]]; then
+        version="${BASH_REMATCH[1]}"
+        sed -i -E "s/(return \")[0-9]+\.[0-9]+\.[0-9]+(\")/\1$version\2/" gimpopenvino/install_utils.py
+      else
+        echo "Could not build version string from raw_version: ${raw_version}"
+        exit 1
+      fi
     override-build: |
       craftctl default
       mkdir -p ${CRAFT_PART_INSTALL}/weights
@@ -90,8 +95,6 @@ parts:
       cp model_setup.py ${CRAFT_PART_INSTALL}
       cp -r gimpopenvino/plugins/* ${CRAFT_PART_INSTALL}
       rm ${CRAFT_PART_INSTALL}/__init__.py
-      # plugins set plugin version from git tags, so copy repo metadata into snap
-      cp -r .git ${CRAFT_PART_INSTALL}/openvino_utils/
       chmod +x ${CRAFT_PART_INSTALL}/stable_diffusion_ov/stable_diffusion_ov.py
       chmod +x ${CRAFT_PART_INSTALL}/semseg_ov/semseg_ov.py
       chmod +x ${CRAFT_PART_INSTALL}/superresolution_ov/superresolution_ov.py
@@ -109,7 +112,6 @@ parts:
       - libx11-6 # opencv-python dep
       - libxext6 # opencv-python dep
       - libgomp1 # pytorch dep
-      - git # plugin version displayed in GIMP by running "git describe"
     stage-snaps:
       - openvino-toolkit-2404/2025/stable
     stage:

@@ -1,8 +1,51 @@
 diff --git a/gimpopenvino/install_utils.py b/gimpopenvino/install_utils.py
-index 2c79020..b2232e5 100644
+index 2c79020..7f0bdf2 100644
 --- a/gimpopenvino/install_utils.py
 +++ b/gimpopenvino/install_utils.py
-@@ -142,6 +142,25 @@ def get_plugin_version(file_dir=None):
+@@ -119,29 +119,45 @@ def get_plugin_version(file_dir=None):
+ 
+     we can then turn this into a PEP440 compliant string
+     """
+-    try:
+-        raw_version = subprocess.check_output(
+-            ["git", "describe", "--tags"],
+-            cwd=file_dir,
+-            encoding="utf-8"
+-        ).strip()
+-        
+-        # Normalize the git version to PEP 440
+-        match = re.match(r"v?(\d+\.\d+\.\d+)(?:-(\d+)-g[0-9a-f]+)?", raw_version)
+-
+-        if match:
+-            version, dev_count = match.groups()
+-            if dev_count:
+-                return f"{version}.dev{dev_count}"  # PEP 440 dev version
+-            return version
+-        else:
+-            raise ValueError(f"Invalid version format: {raw_version}")
+-    except Exception as e:
+-        print(f"Error obtaining version: {e}")
+-        return "0.0.0"  # Fallback version    
++    #try:
++    #    raw_version = subprocess.check_output(
++    #        ["git", "describe", "--tags"],
++    #        cwd=file_dir,
++    #        encoding="utf-8"
++    #    ).strip()
++    #    
++    #    # Normalize the git version to PEP 440
++    #    match = re.match(r"v?(\d+\.\d+\.\d+)(?:-(\d+)-g[0-9a-f]+)?", raw_version)
++
++    #    if match:
++    #        version, dev_count = match.groups()
++    #        if dev_count:
++    #            return f"{version}.dev{dev_count}"  # PEP 440 dev version
++    #        return version
++    #    else:
++    #        raise ValueError(f"Invalid version format: {raw_version}")
++    #except Exception as e:
++    #    print(f"Error obtaining version: {e}")
++    return "0.0.0"  # Fallback version
  
  
  def complete_install(repo_weights_dir=None):
@@ -10,9 +53,6 @@ index 2c79020..b2232e5 100644
 +    ov_content_dir = f"{snap_env_var}/gimp-plugins/openvino-gimp"
 +    pythonpath_env_var = os.environ.get("PYTHONPATH")
 +    path_env_var = os.environ.get("PATH")
-+    os.environ.setdefault("GIT_DIR", f"{snap_env_var}/gimp-plugins/openvino_utils/.git")
-+    os.environ.setdefault("GIT_EXEC_PATH", f"{ov_content_dir}/usr/lib/git-core")
-+    os.environ.setdefault("GIT_TEMPLATE_DIR", f"{ov_content_dir}/usr/share/git-core/templates")
 +    os.environ.setdefault("OCL_ICD_VENDORS", f"{ov_content_dir}/etc/OpenCL/vendors")
 +    os.environ["PYTHONPATH"] = (
 +        f"{pythonpath_env_var}:"
@@ -28,7 +68,7 @@ index 2c79020..b2232e5 100644
      install_location = base_model_dir 
  
      # Create the install directory if it doesn't exist
-@@ -186,12 +205,12 @@ def complete_install(repo_weights_dir=None):
+@@ -186,12 +202,12 @@ def complete_install(repo_weights_dir=None):
          json.dump(py_dict, file)
  
      # For Linux, add executable permissions to plugin scripts
