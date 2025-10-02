@@ -57,7 +57,7 @@ apps:
       - network # for downloading models
     environment:
       PATH: $PATH:$SNAP/openvino-gimp/usr/bin:$SNAP/openvino-gimp/bin
-      LD_LIBRARY_PATH: $SNAP/openvino-gimp/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$LD_LIBRARY_PATH
+      LD_LIBRARY_PATH: $SNAP/openvino-gimp/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/npu-libs:$LD_LIBRARY_PATH
       PYTHONPATH: $SNAP/openvino-gimp/lib/python3.12/site-packages:$SNAP/openvino-gimp/usr/lib/python3/dist-packages:$PYTHONPATH
       OCL_ICD_VENDORS: $SNAP/openvino-gimp/etc/OpenCL/vendors
 
