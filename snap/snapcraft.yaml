@@ -183,12 +183,6 @@ parts:
       share: openvino-gimp/share
       usr: openvino-gimp/usr
 
-  add-ld-library-path:
-    plugin: dump
-    source: openvino-gimp.conf/
-    organize:
-      add-ld-library-path: openvino-gimp.conf/add-ld-library-path
-
   command-chain:
     plugin: dump
     source: command-chain/
