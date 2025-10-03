@@ -35,7 +35,6 @@ slots:
         - $SNAP/superresolution_ov
         - $SNAP/openvino_utils
         - $SNAP/openvino-gimp
-        - $SNAP/openvino-gimp.conf
 
 plugs:
   intel-npu:
@@ -77,7 +76,7 @@ parts:
       sed -i '/openvino/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
       git apply ${CRAFT_PROJECT_DIR}/patches/001-optimum-cli-from-path.patch
-      git apply ${CRAFT_PROJECT_DIR}/patches/002-set-environment-vars-from-plugins.patch
+      git apply ${CRAFT_PROJECT_DIR}/patches/002-remove-git-dep-and-chmods.patch
       # plug-ins rely on running git describe --tags at runtime to determine the
       # plug-in version, which is not straightforward in a snap.
       raw_version="$(git describe --tags)"
@@ -95,9 +94,6 @@ parts:
       cp model_setup.py ${CRAFT_PART_INSTALL}
       cp -r gimpopenvino/plugins/* ${CRAFT_PART_INSTALL}
       rm ${CRAFT_PART_INSTALL}/__init__.py
-      chmod +x ${CRAFT_PART_INSTALL}/stable_diffusion_ov/stable_diffusion_ov.py
-      chmod +x ${CRAFT_PART_INSTALL}/semseg_ov/semseg_ov.py
-      chmod +x ${CRAFT_PART_INSTALL}/superresolution_ov/superresolution_ov.py
     build-environment:
       - PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
     stage-packages:
@@ -188,6 +184,14 @@ parts:
     source: command-chain/
     organize:
       set-runtime-env: command-chain/set-runtime-env
+
+  plugin-wrappers:
+    plugin: dump
+    source: plugin-wrappers/
+    organize:
+      stable_diffusion_ov.sh: stable_diffusion_ov/stable_diffusion_ov.sh
+      semseg_ov.sh: semseg_ov/semseg_ov.sh
+      superresolution_ov.sh: superresolution_ov/superresolution_ov.sh
 
 lint:
   ignore:
