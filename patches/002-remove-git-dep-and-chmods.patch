@@ -1,0 +1,73 @@
+diff --git a/gimpopenvino/install_utils.py b/gimpopenvino/install_utils.py
+index 2c79020..64b5759 100644
+--- a/gimpopenvino/install_utils.py
++++ b/gimpopenvino/install_utils.py
+@@ -119,26 +119,26 @@ def get_plugin_version(file_dir=None):
+ 
+     we can then turn this into a PEP440 compliant string
+     """
+-    try:
+-        raw_version = subprocess.check_output(
+-            ["git", "describe", "--tags"],
+-            cwd=file_dir,
+-            encoding="utf-8"
+-        ).strip()
+-        
+-        # Normalize the git version to PEP 440
+-        match = re.match(r"v?(\d+\.\d+\.\d+)(?:-(\d+)-g[0-9a-f]+)?", raw_version)
+-
+-        if match:
+-            version, dev_count = match.groups()
+-            if dev_count:
+-                return f"{version}.dev{dev_count}"  # PEP 440 dev version
+-            return version
+-        else:
+-            raise ValueError(f"Invalid version format: {raw_version}")
+-    except Exception as e:
+-        print(f"Error obtaining version: {e}")
+-        return "0.0.0"  # Fallback version    
++    #try:
++    #    raw_version = subprocess.check_output(
++    #        ["git", "describe", "--tags"],
++    #        cwd=file_dir,
++    #        encoding="utf-8"
++    #    ).strip()
++    #    
++    #    # Normalize the git version to PEP 440
++    #    match = re.match(r"v?(\d+\.\d+\.\d+)(?:-(\d+)-g[0-9a-f]+)?", raw_version)
++
++    #    if match:
++    #        version, dev_count = match.groups()
++    #        if dev_count:
++    #            return f"{version}.dev{dev_count}"  # PEP 440 dev version
++    #        return version
++    #    else:
++    #        raise ValueError(f"Invalid version format: {raw_version}")
++    #except Exception as e:
++    #    print(f"Error obtaining version: {e}")
++    return "0.0.0"  # Fallback version
+ 
+ 
+ def complete_install(repo_weights_dir=None):
+@@ -186,12 +186,12 @@ def complete_install(repo_weights_dir=None):
+         json.dump(py_dict, file)
+ 
+     # For Linux, add executable permissions to plugin scripts
+-    if platform.system() == "Linux":
+-        scripts = [
+-            "plugins/superresolution_ov/superresolution_ov.py",
+-            "plugins/stable_diffusion_ov/stable_diffusion_ov.py",
+-            "plugins/semseg_ov/semseg_ov.py",
+-        ]
+-        for script in scripts:
+-            script_path = os.path.join(plugin_loc, script)
+-            subprocess.call(["chmod", "+x", script_path])
++    #if platform.system() == "Linux":
++    #    scripts = [
++    #        "plugins/superresolution_ov/superresolution_ov.py",
++    #        "plugins/stable_diffusion_ov/stable_diffusion_ov.py",
++    #        "plugins/semseg_ov/semseg_ov.py",
++    #    ]
++    #    for script in scripts:
++    #        script_path = os.path.join(plugin_loc, script)
++    #        subprocess.call(["chmod", "+x", script_path])

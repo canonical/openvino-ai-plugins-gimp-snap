@@ -15,14 +15,8 @@ then
 fi
 
 sudo snap install intel-npu-driver
-# install from latest/edge for now because the latest release (which the ai plugins depend on)
-# has not yet been promoted beyond this channel
-sudo snap install openvino-toolkit-2404 --channel latest/edge
 
 if [ "${optional_arg_A}" = "--clean_plugin_dirs" ] || [ "${optional_arg_B}" = "--clean_plugin_dirs" ]; then
-  CONFIG_FILE=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/gimp_openvino_config.json
-  MODEL_DIR=${SNAP_REAL_HOME}/.local/share/openvino-ai-plugins-gimp
-  echo "Removing ${CONFIG_FILE} and ${MODEL_DIR} for the next checkbox run."
-  rm -f ${CONFIG_FILE}
-  rm -rf ${MODEL_DIR}
+  SNAP_USER_COMMON_DIR=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common
+  rm -rf "${SNAP_USER_COMMON_DIR}"
 fi
