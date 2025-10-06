@@ -6,6 +6,8 @@ This snap is a content producer snap for integrating AI plugins into the GIMP sn
 * Super Resolution
 * Semantic Segmentation
 
+Please refer to the [upstream repo](https://github.com/intel/openvino-ai-plugins-gimp) for instructions and demos on using the plugins.
+
 ## Instructions for installing and running the snap
 
 ### Install dependencies for NPU support (optional)
