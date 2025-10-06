@@ -76,6 +76,9 @@ parts:
       sed -i '/openvino/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
       git apply ${CRAFT_PROJECT_DIR}/patches/001-optimum-cli-from-path.patch
+      # This patch removes code from an installation utility that complicates snap packaging.
+      # The code is commented instead of removed for easier reference in future snap packaging
+      # and troubleshooting work.
       git apply ${CRAFT_PROJECT_DIR}/patches/002-remove-git-dep-and-chmods.patch
       # plug-ins rely on running git describe --tags at runtime to determine the
       # plug-in version, which is not straightforward in a snap.

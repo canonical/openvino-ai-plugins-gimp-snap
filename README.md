@@ -12,7 +12,7 @@ Please refer to the [upstream repo](https://github.com/intel/openvino-ai-plugins
 
 ### Install dependencies for NPU support (optional)
 
-If you are running on an Intel® Core™ Ultra generation CPU containing a NPU accelerator, install the NPU snap:
+If you are running on an Intel® Core™ Ultra generation CPU containing an NPU accelerator, install the NPU snap:
 
 ```
 sudo snap install intel-npu-driver # for NPU support
