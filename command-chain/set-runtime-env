@@ -1,8 +1,11 @@
 #!/bin/bash
 
+export GIMP_OPENVINO_CONFIG_PATH="${SNAP_USER_COMMON}"
+export GIMP_OPENVINO_MODELS_PATH="${SNAP_USER_COMMON}"
+
 mkdir -p "${SNAP_USER_COMMON}"/{mms_tmp,weights}
 
-weights_dir="${SNAP_USER_COMMON}/weights"
+weights_dir="${SNAP}/openvino-gimp/weights"
 
 python3 -c "from gimpopenvino import install_utils; install_utils.complete_install(repo_weights_dir=r'${weights_dir}')"
 
