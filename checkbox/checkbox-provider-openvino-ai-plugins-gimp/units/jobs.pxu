@@ -77,7 +77,7 @@ command:
     >&2 echo "In order to run the GIMP plugin tests you must first remove this file."
     exit 1
   fi
-  MODELS_DIR=${SNAP_REAL_HOME}/.local/share/openvino-ai-plugins-gimp
+  MODELS_DIR=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common
   if [ -d ${MODELS_DIR} ]; then
     >&2 echo "Test failure: ${MODELS_DIR} already exists!"
     >&2 echo "In order to run the GIMP plugin tests you must first remove this directory."
@@ -109,7 +109,7 @@ estimated_duration: 2s
 depends:
   gimp/model_setup_empty_run
 command:
-  SEMSEG_DIR=${SNAP_REAL_HOME}/.local/share/openvino-ai-plugins-gimp/weights/semseg-ov
+  SEMSEG_DIR=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/weights/semseg-ov
   file_cnt=$(ls ${SEMSEG_DIR} | wc -l)
   if [ ${file_cnt} != "5" ]; then
     >&2 echo "Test failure: expected 5 files in ${SEMSEG_DIR}, got ${file_cnt} instead."
@@ -125,7 +125,7 @@ estimated_duration: 2s
 depends:
   gimp/model_setup_empty_run
 command:
-  SUPERRES_DIR=${SNAP_REAL_HOME}/.local/share/openvino-ai-plugins-gimp/weights/superresolution-ov
+  SUPERRES_DIR=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/weights/superresolution-ov
   file_cnt=$(ls ${SUPERRES_DIR} | wc -l)
   if [ ${file_cnt} != "7" ]; then
     >&2 echo "Test failure: expected 7 files in ${SUPERRES_DIR}, got ${file_cnt} instead."
