@@ -27,7 +27,7 @@ package-repositories:
 slots:
   gimp-plugins:
     interface: content
-    content: gimp-plugins
+    content: gimp-plugins-3
     source:
       read:
         - $SNAP/semseg_ov
