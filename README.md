@@ -2,7 +2,7 @@
 
 This snap is a content producer snap for integrating AI plugins into the GIMP snap. The plugins include:
 
-* Stable Diffusion
+* Stable Diffusion (including "FastSD" plugin starting in version 3.2.1)
 * Super Resolution
 * Semantic Segmentation
 
@@ -71,3 +71,5 @@ sudo snap connect openvino-ai-plugins-gimp:npu-libs intel-npu-driver:npu-libs
 ## Installing stable diffusion models
 
 Models may be download from within GIMP by clicking "Model" in the top-left of the stable diffusion dialog window (Layer -> OpenVINO-AI-Plugins -> Stable Diffusion).
+
+The FastSD (Fast Stable Diffusion) plugins download and install models automatically the first time they are selected.
