@@ -1,7 +1,10 @@
 #!/bin/bash
 
-export GIMP_OPENVINO_CONFIG_PATH="${SNAP_USER_COMMON}"
-export GIMP_OPENVINO_MODELS_PATH="${SNAP_USER_COMMON}"
+# note, the trailing slash is signficant since this is eventually
+# used by os.path.dirname() in the plugin code, and that function
+# returns the parent directory without the trailing slash.
+export GIMP_OPENVINO_CONFIG_PATH="${SNAP_USER_COMMON}/"
+export GIMP_OPENVINO_MODELS_PATH="${SNAP_USER_COMMON}/"
 CONTENT_PATH="${SNAP}/gimp-plugins/openvino-gimp"
 export LD_LIBRARY_PATH="${CONTENT_PATH}/usr/lib/x86_64-linux-gnu":$LD_LIBRARY_PATH
 export PATH="${PATH}":"${CONTENT_PATH}/usr/bin":"${CONTENT_PATH}/bin"

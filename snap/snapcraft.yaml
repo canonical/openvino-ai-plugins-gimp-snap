@@ -91,6 +91,7 @@ parts:
         echo "Could not build version string from raw_version: ${raw_version}"
         exit 1
       fi
+      git apply ${CRAFT_PROJECT_DIR}/patches/003-fastsd-move-appdir-outside-snap.patch
     override-build: |
       craftctl default
       mkdir -p ${CRAFT_PART_INSTALL}/weights
