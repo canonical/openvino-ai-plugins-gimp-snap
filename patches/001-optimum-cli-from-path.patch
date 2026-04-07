@@ -1,8 +1,8 @@
 diff --git a/gimpopenvino/plugins/openvino_utils/tools/model_manager.py b/gimpopenvino/plugins/openvino_utils/tools/model_manager.py
-index 834226f..fa793dd 100644
+index 86b46c9..2f23c62 100644
 --- a/gimpopenvino/plugins/openvino_utils/tools/model_manager.py
 +++ b/gimpopenvino/plugins/openvino_utils/tools/model_manager.py
-@@ -857,7 +857,7 @@ class ModelManager:
+@@ -893,7 +893,7 @@ class ModelManager:
                          #print("optimun-cli full install path",full_install_path)
                          import subprocess
                          

@@ -33,6 +33,7 @@ slots:
         - $SNAP/semseg_ov
         - $SNAP/stable_diffusion_ov
         - $SNAP/superresolution_ov
+        - $SNAP/fastsd_ov
         - $SNAP/openvino_utils
         - $SNAP/openvino-gimp
 
@@ -64,7 +65,7 @@ parts:
   gimp-plugins:
     source-type: git
     source: https://github.com/intel/openvino-ai-plugins-gimp
-    source-tag: 3.1.2
+    source-tag: 3.2.1
     plugin: python
     python-requirements:
       - ./requirements.txt
@@ -90,6 +91,7 @@ parts:
         echo "Could not build version string from raw_version: ${raw_version}"
         exit 1
       fi
+      git apply ${CRAFT_PROJECT_DIR}/patches/003-fastsd-move-appdir-outside-snap.patch
     override-build: |
       craftctl default
       mkdir -p ${CRAFT_PART_INSTALL}/weights
@@ -195,6 +197,7 @@ parts:
       stable_diffusion_ov.sh: stable_diffusion_ov/stable_diffusion_ov.sh
       semseg_ov.sh: semseg_ov/semseg_ov.sh
       superresolution_ov.sh: superresolution_ov/superresolution_ov.sh
+      fastsd_ov.sh: fastsd_ov/fastsd_ov.sh
 
 lint:
   ignore:
