@@ -127,8 +127,8 @@ depends:
 command:
   SUPERRES_DIR=${SNAP_REAL_HOME}/snap/openvino-ai-plugins-gimp/common/weights/superresolution-ov
   file_cnt=$(ls ${SUPERRES_DIR} | wc -l)
-  if [ ${file_cnt} != "7" ]; then
-    >&2 echo "Test failure: expected 7 files in ${SUPERRES_DIR}, got ${file_cnt} instead."
+  if [ ${file_cnt} != "6" ]; then
+    >&2 echo "Test failure: expected 6 files in ${SUPERRES_DIR}, got ${file_cnt} instead."
     exit 1
   fi
   echo "Test success: super resolution models found in expected location."
