@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Find and parse snapcraft.yaml
         id: snapcraft-yaml
         uses: snapcrafters/ci/parse-snapcraft-yaml@main
@@ -40,7 +40,7 @@ jobs:
           path: ${{ steps.snapcraft-yaml.outputs.project-root }}
           snapcraft-args: "-o ${{ env.CHECKBOX_PROVIDER_NAME }}.snap"
       - name: Upload snap artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.CHECKBOX_PROVIDER_NAME }}
           path: ${{ steps.build.outputs.snap }}
@@ -60,11 +60,11 @@ jobs:
       fail-fast: false
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+        uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ env.CHECKBOX_PROVIDER_NAME }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ env.SAMPLE_CONSUMER_NAME }}
       - name: Build job file from template with oemscript provisioning
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Create and push tag for revision
         shell: bash
         env:
