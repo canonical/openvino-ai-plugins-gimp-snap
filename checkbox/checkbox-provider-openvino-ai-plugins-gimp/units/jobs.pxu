@@ -207,7 +207,7 @@ command:
   fi
   printf "Test success: found NPU in supported devices:\n${supported_devices}"
 
-id: gimp/model_setup_install_square_model
+id: gimp/model_setup_install_controlnet_scribble_model
 category_id: openvino-plugins
 flags: simple
 _summary: Check that model setup app can install a model
@@ -219,14 +219,14 @@ depends:
 command:
   # reset environment vars to prevent python environment conflicts
   export -n PYTHONHOME PYTHONPATH PYTHONUSERBASE
-  # menu item 1 : install Stable Diffusion 1.5 Square
+  # menu item 9 : install Stable Diffusion 1.5 Controlnet: Scribble
   # menu item 0 : exit stable diffusion model setup
-  echo "1 0" | openvino-ai-plugins-gimp.model-setup
+  echo "9 0" | openvino-ai-plugins-gimp.model-setup
   set -e
   set -o pipefail
-  if echo "0" | openvino-ai-plugins-gimp.model-setup | grep "Stable Diffusion 1.5 Square (Installed)"; then
-    echo "Test success: installed stable diffusion 1.5 square model using model-setup application."
+  if echo "0" | openvino-ai-plugins-gimp.model-setup | grep "Stable Diffusion 1.5 Controlnet: Scribble (Installed)"; then
+    echo "Test success: installed stable diffusion 1.5 Controlnet scribble model using model-setup application."
   else
-    >&2 echo "Test failure: stable diffusion 1.5 square model not installed."
+    >&2 echo "Test failure: stable diffusion 1.5 Controlnet scribble model not installed."
     exit 1
   fi
