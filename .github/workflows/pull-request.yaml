@@ -6,21 +6,22 @@ on:
       - 'snap/**'
       - 'command-chain/**'
       - '.github/workflows/pull-request.yaml'
-    branches:
-      - main
-  workflow_dispatch:
+    branches: ["**"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  release:
-    name: Release to latest/edge
+  build:
+    name: Build snap and run smoke tests
     runs-on: self-hosted-linux-amd64-jammy-xlarge
+    # Only run on PRs from branches in the same repository (not forks)
+    # This ensures only trusted sources can trigger this workflow
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Checkout the source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Find and parse snapcraft.yaml
         id: snapcraft-yaml
         uses: snapcrafters/ci/parse-snapcraft-yaml@main
@@ -29,6 +30,12 @@ jobs:
         id: build
         with:
           path: ${{ steps.snapcraft-yaml.outputs.project-root }}
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: openvino-ai-plugins-gimp-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ steps.build.outputs.snap }}
+          retention-days: 30
       - name: Review the built snap
         uses: diddlesnaps/snapcraft-review-action@v1
         with:
@@ -40,11 +47,3 @@ jobs:
         shell: bash
         run: |
           sudo snap install --dangerous "${{ steps.build.outputs.snap }}"
-      - name: Release to latest/edge
-        id: publish
-        shell: bash
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_STORE_PE_BOT }}
-          SNAP_FILE: ${{ steps.build.outputs.snap }}
-        run: |
-          snapcraft upload "$SNAP_FILE" --release=latest/edge
