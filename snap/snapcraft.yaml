@@ -67,14 +67,11 @@ parts:
     source: https://github.com/intel/openvino-ai-plugins-gimp
     source-tag: 3.3.0
     plugin: python
-    python-requirements:
-      - ./requirements.txt
     override-pull: |
       craftctl default
       # remove dependencies mounted from openvino-toolkit-2404 content producer snap
       sed -i '/\"openvino\"/d' ./setup.py
       sed -i '/\"numpy\"/d' ./setup.py
-      sed -i '/openvino/d' ./requirements.txt
       craftctl set version="$(git describe --tags --abbrev=4 --always)"
       git apply ${CRAFT_PROJECT_DIR}/patches/001-optimum-cli-from-path.patch
       # This patch removes code from an installation utility that complicates snap packaging.
