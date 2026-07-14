@@ -1,0 +1,143 @@
+name: Upstream release check
+
+# Opens a single pull request when a new openvino-ai-plugins-gimp upstream
+# release exists AND the openvino major version it depends on matches an existing
+# stable track of the openvino-toolkit-2404 content snap. The PR bumps both the
+# source-tag and the content-snap year track in snap/snapcraft.yaml together.
+#
+# If a new release needs an openvino major that has no matching stable track yet,
+# no PR is opened (a warning is logged) so the snap never points at a track that
+# cannot supply the openvino version the plugin depends on.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  UPSTREAM_REPO: intel/openvino-ai-plugins-gimp
+  CONTENT_SNAP: openvino-toolkit-2404
+  SNAPCRAFT_YAML: snap/snapcraft.yaml
+
+jobs:
+  upstream-release:
+    name: Open PR for a matching upstream release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Determine whether an update is due
+        id: check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Highest semver-like tag published upstream.
+          latest_tag="$(gh api --paginate "repos/${UPSTREAM_REPO}/tags" --jq '.[].name' \
+            | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)"
+          echo "Latest upstream tag: ${latest_tag}"
+
+          # Tag currently pinned in snapcraft.yaml.
+          current_tag="$(sed -nE 's/^[[:space:]]*source-tag:[[:space:]]*(\S+).*/\1/p' "${SNAPCRAFT_YAML}" | head -n1)"
+          echo "Current source-tag: ${current_tag}"
+
+          if [[ "${latest_tag}" == "${current_tag}" ]]; then
+            echo "No new upstream release."
+            echo "update=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          # openvino version the new release depends on. The pin has lived in
+          # requirements.txt (<= 3.2.1) and in setup.py's install_requires
+          # (>= 3.3.0), so check both and take the first match.
+          openvino_version=""
+          for dep_file in requirements.txt setup.py; do
+            dep_url="https://raw.githubusercontent.com/${UPSTREAM_REPO}/${latest_tag}/${dep_file}"
+            content="$(curl -fsSL "${dep_url}" || true)"
+            [[ -z "${content}" ]] && continue
+            openvino_version="$(grep -oE 'openvino[[:space:]]*[=<>~!]+[[:space:]]*[0-9]+(\.[0-9]+)*' <<< "${content}" \
+              | head -n1 | grep -oE '[0-9]+(\.[0-9]+)*' || true)"
+            [[ -n "${openvino_version}" ]] && break
+          done
+          if [[ -z "${openvino_version}" ]]; then
+            echo "::error::Could not determine the pinned openvino version for ${latest_tag}"
+            exit 1
+          fi
+          openvino_major="${openvino_version%%.*}"
+          echo "Upstream ${latest_tag} depends on openvino ${openvino_version} (major ${openvino_major})"
+
+          # Numeric stable tracks available for the content snap.
+          tracks="$(curl -fsSL -H 'Snap-Device-Series: 16' \
+            "https://api.snapcraft.io/v2/snaps/info/${CONTENT_SNAP}" \
+            | python3 -c 'import sys, json; d = json.load(sys.stdin); print("\n".join(sorted({c["channel"]["track"] for c in d["channel-map"] if c["channel"]["risk"] == "stable" and c["channel"]["track"].isdigit()})))')"
+          echo "Available stable tracks:"
+          echo "${tracks}"
+
+          if ! grep -qx "${openvino_major}" <<< "${tracks}"; then
+            echo "::warning::Upstream ${latest_tag} needs openvino major ${openvino_major}, but ${CONTENT_SNAP} has no matching stable track yet. No PR opened."
+            echo "update=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          {
+            echo "update=true"
+            echo "latest_tag=${latest_tag}"
+            echo "openvino_version=${openvino_version}"
+            echo "openvino_major=${openvino_major}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Apply the bumps to snapcraft.yaml
+        if: steps.check.outputs.update == 'true'
+        shell: bash
+        env:
+          LATEST_TAG: ${{ steps.check.outputs.latest_tag }}
+          OPENVINO_MAJOR: ${{ steps.check.outputs.openvino_major }}
+        run: |
+          set -euo pipefail
+          sed -i -E "s|^([[:space:]]*source-tag:[[:space:]]*).*|\1${LATEST_TAG}|" "${SNAPCRAFT_YAML}"
+          sed -i -E "s|(${CONTENT_SNAP}/)[0-9]+(/stable)|\1${OPENVINO_MAJOR}\2|" "${SNAPCRAFT_YAML}"
+          git --no-pager diff -- "${SNAPCRAFT_YAML}"
+
+      - name: Open the pull request
+        if: steps.check.outputs.update == 'true'
+        # Uses the default GITHUB_TOKEN (via the permissions block above). Note:
+        # GitHub deliberately does NOT start new workflow runs for events raised
+        # by GITHUB_TOKEN, so this PR will not automatically trigger
+        # pull-request.yaml. Requires the repo setting
+        # "Allow GitHub Actions to create and approve pull requests".
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          branch: automation/upstream-${{ steps.check.outputs.latest_tag }}
+          base: main
+          delete-branch: true
+          title: "chore: update to ${{ env.UPSTREAM_REPO }} ${{ steps.check.outputs.latest_tag }}"
+          commit-message: |
+            chore: update to ${{ env.UPSTREAM_REPO }} ${{ steps.check.outputs.latest_tag }}
+
+            Bump the upstream source-tag and point the ${{ env.CONTENT_SNAP }}
+            content snap at the ${{ steps.check.outputs.openvino_major }}/stable
+            track to match the openvino ${{ steps.check.outputs.openvino_version }}
+            dependency.
+          body: |
+            Automated update triggered by a new upstream release.
+
+            - Upstream release: `${{ steps.check.outputs.latest_tag }}`
+            - openvino dependency: `${{ steps.check.outputs.openvino_version }}`
+            - Content snap track: `${{ env.CONTENT_SNAP }}/${{ steps.check.outputs.openvino_major }}/stable`
+
+            > [!NOTE]
+            > This PR was opened by CI using `GITHUB_TOKEN`, so it does not
+            > automatically trigger the checks in `pull-request.yaml`. To run
+            > them, update the PR (e.g. push a commit) or close and re-open it.
+          labels: automation
