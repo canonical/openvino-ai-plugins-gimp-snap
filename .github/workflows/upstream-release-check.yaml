@@ -121,6 +121,10 @@ jobs:
           branch: automation/upstream-${{ steps.check.outputs.latest_tag }}
           base: main
           delete-branch: true
+          # Attribute the commit to the GitHub Actions bot rather than the user
+          # who triggered the workflow (the default author is github.actor).
+          author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          committer: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
           title: "chore: update to ${{ env.UPSTREAM_REPO }} ${{ steps.check.outputs.latest_tag }}"
           commit-message: |
             chore: update to ${{ env.UPSTREAM_REPO }} ${{ steps.check.outputs.latest_tag }}
