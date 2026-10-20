@@ -10,7 +10,7 @@ test_data:
       agent: "set-device-access.sh"
   test_cmds: |
 
-    set -e
+    set -x
 
     # retrieve the tools installer
     curl -Ls -o install_tools.sh https://raw.githubusercontent.com/canonical/hwcert-jenkins-tools/main/install_tools.sh
