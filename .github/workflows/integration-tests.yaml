@@ -18,6 +18,32 @@ env:
   TEST_OBSERVER_URL: https://test-observer-api.canonical.com
 
 jobs:
+  resolve-snap-info:
+    name: Resolve snap version and revision
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      version: ${{ steps.snap-info.outputs.version }}
+      revision: ${{ steps.snap-info.outputs.revision }}
+    steps:
+      - name: Query latest/edge version and revision
+        id: snap-info
+        run: |
+          for attempt in {1..5}; do
+            edge_line=$(snap info openvino-ai-plugins-gimp | grep latest/edge || true)
+            [ -n "$edge_line" ] && break
+            echo "snap info returned no latest/edge line (attempt $attempt), retrying..."
+            sleep 60
+          done
+          revision=$(echo "$edge_line" | cut -d "(" -f2 | cut -d ")" -f1)
+          version=$(echo "$edge_line" | awk '{print $2}')
+          if [ -z "$revision" ] || [ -z "$version" ]; then
+            echo "::error::Failed to parse revision/version from snap info latest/edge line: '$edge_line'"
+            exit 1
+          fi
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
   build-checkbox-provider:
     name: Checkbox provider build
     runs-on: ubuntu-latest
@@ -43,44 +69,99 @@ jobs:
 
   testflinger-validation:
     name: Testflinger Validation
-    needs: [build-checkbox-provider]
-    runs-on: self-hosted-linux-amd64-noble-private-endpoint-small
+    needs: [resolve-snap-info, build-checkbox-provider]
+    runs-on: ubuntu-latest
     # Only run if the release workflow completed successfully
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      actions: read
+      contents: read
     strategy:
       matrix:
-        device:
-          # Dell XPS 13 9340 Laptop, Meteor Lake, 24.04
-          - { queue: dell-xps-13-9340-c34051, gen: "MTL", image: https://tel-image-cache.canonical.com/oem-share/somerville/releases/noble/oem-24.04a/20240729-53/somerville-noble-oem-24.04a-20240729-53.iso }
-          # Dell Pro Max Tower T2 Desktop, Arrow Lake, 24.04
-          - { queue: dell-pro-max-tower-f0t2250-0ce1-c36197, gen: "ARL", image: https://tel-image-cache.canonical.com/oem-share/somerville/releases/noble/oem-24.04b-proposed/20241220-148/somerville-noble-oem-24.04b-proposed-20241220-148.iso }
-          # Dell XPS 13 9350 Laptop, Lunar Lake, 24.04
-          - { queue: dell-xps-13-9350-c36962, gen: "LNL", image: https://tel-image-cache.canonical.com/oem-share/somerville/releases/noble/oem-24.04c/20250801-32/somerville-noble-oem-24.04c-20250801-32.iso }
+        tag: ["intel-core-ultra-mtl", "intel-core-ultra-arl", "intel-core-ultra-lnl", "intel-core-ultra-ptl"]
       fail-fast: false
     steps:
       - name: Check out code
         uses: actions/checkout@v7
+      - name: Check out partner-eng-gh-actions
+        uses: actions/checkout@v7
+        with:
+          repository: canonical/partner-eng-gh-actions
+          ref: lab/various-improvements
+          token: ${{ secrets.PE_BOT_PAT }}
+          path: .github/actions/partner-eng-gh-actions
+      - name: Resolve device from lab history
+        id: device
+        uses: ./.github/actions/partner-eng-gh-actions/.github/actions/lab/device-from-repo-history
+        with:
+          github_token: ${{ secrets.PE_BOT_PAT }}
+          tags: '["${{ matrix.tag }}"]'
+          testflinger_client_id: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+          testflinger_secret_key: ${{ secrets.TESTFLINGER_SECRET_KEY }}
+      - name: Fail if no recorded device matched
+        if: ${{ steps.device.outputs.matched != 'true' }}
+        run: |
+          echo "::error::No successful lab-history entry found for tag ${{ matrix.tag }}"
+          exit 1
       - uses: actions/download-artifact@v8
         with:
           name: ${{ env.CHECKBOX_PROVIDER_NAME }}
       - name: Build job file from template with oemscript provisioning
         run: |
-          sed -e "s|REPLACE_QUEUE|${{ matrix.device.queue }}|" \
-          -e "s|REPLACE_IMAGE_URL|${{ matrix.device.image }}|" \
+          sed -e "s|REPLACE_QUEUE|${{ steps.device.outputs.queue }}|" \
+          -e "s|REPLACE_IMAGE_URL|$(jq -r '.image' <<< '${{ steps.device.outputs.details }}')|" \
           -e "s|REPLACE_ATTACHMENT|${{ env.CHECKBOX_PROVIDER_NAME }}.snap|" \
           ${GITHUB_WORKSPACE}/.github/testflinger/job-def.yaml > \
           ${GITHUB_WORKSPACE}/job.yaml
       - name: Submit testflinger job
         id: submit
         continue-on-error: true
-        uses: canonical/testflinger/.github/actions/submit@submit/v1.4.8
+        uses: canonical/testflinger/.github/actions/submit@submit/v1.5.1
         with:
           poll: true
           job-path: ${{ github.workspace }}/job.yaml
           client-id: ${{ secrets.TESTFLINGER_CLIENT_ID }}
           secret-key: ${{ secrets.TESTFLINGER_SECRET_KEY }}
+      - name: Check provisioning status
+        id: provision-status
+        if: ${{ always() && steps.device.outputs.matched == 'true' }}
+        env:
+          TESTFLINGER_CLIENT_ID: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+          TESTFLINGER_SECRET_KEY: ${{ secrets.TESTFLINGER_SECRET_KEY }}
+        run: |
+          job_id="${{ steps.submit.outputs.id }}"
+          status=""
+          if [ -n "$job_id" ]; then
+            status="$(testflinger results "$job_id" 2>/dev/null | jq -r '.provision_status // empty')"
+          fi
+          if [ "$status" = "0" ]; then
+            echo "provisioned=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$status" ]; then
+            echo "provisioned=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "provisioned=unknown" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Record device history
+        if: ${{ always() && steps.device.outputs.matched == 'true' }}
+        uses: ./.github/actions/partner-eng-gh-actions/.github/actions/lab/update-history
+        with:
+          device: ${{ steps.device.outputs.device }}
+          queue: ${{ steps.device.outputs.queue }}
+          device_context: ${{ steps.device.outputs.details }}
+          job_path: ${{ github.workspace }}/job.yaml
+          outcome: skipped
+          provision_outcome: ${{ steps.provision-status.outputs.provisioned == 'true' && 'passed' || steps.provision-status.outputs.provisioned == 'false' && 'failed' || 'unknown' }}
+          job_id: ${{ steps.submit.outputs.id }}
+          github_token: ${{ secrets.PE_BOT_LAB_DEVICES_READ_AND_WRITE }}
+          author: 'partner-eng-bot <pe-bot@canonical.com>'
+          committer: 'partner-eng-bot <pe-bot@canonical.com>'
+          auto_merge: true
+          merge_method: squash
       - name: Download checkbox artifacts
         id: artifacts
+        env:
+          TESTFLINGER_CLIENT_ID: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+          TESTFLINGER_SECRET_KEY: ${{ secrets.TESTFLINGER_SECRET_KEY }}
         run: |
           # Download the job artifacts with retry logic
           for attempt in {1..10}; do
@@ -116,7 +197,7 @@ jobs:
           # submissions in a single run, so we need to extract them here and
           # upload them separately.
           #
-          queue="${{ matrix.device.queue }}"
+          queue="${{ steps.device.outputs.queue }}"
           mkdir -p "extracted-artifacts/$queue"
           i=0
           for file in artifacts/*.tar.xz; do
@@ -128,10 +209,10 @@ jobs:
               # Extract only submission.json
               tar -xJf "$file" submission.json -O > "$run_dir/submission.json"
 
-              # Build environment key, for example: env0=MTL-24.04.3-6.17-generic
+              # Build environment key, for example: env0=intel-core-ultra-mtl-24.04.3-6.17-generic
               kernel_ver=$(jq -r '[.system_information | .. | objects | to_entries[] | select(.key | endswith("#Kernel")) | .value] | first' "$run_dir/submission.json")
               os_ver=$(jq -r '[.system_information | .. | objects | to_entries[] | select(.key | endswith("#Distro")) | .value] | first | match("Ubuntu ([0-9.]+)") | .captures[0].string' "$run_dir/submission.json")
-              echo "env$i=${{ matrix.device.gen }}-${os_ver}-${kernel_ver}" >> $GITHUB_OUTPUT
+              echo "env$i=${{ matrix.tag }}-${os_ver}-${kernel_ver}" >> $GITHUB_OUTPUT
 
               # Save tarball path to output
               echo "tarball$i=$file" >> $GITHUB_OUTPUT
@@ -142,41 +223,34 @@ jobs:
       - name: Upload checkbox artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: checkbox-results-${{ matrix.device.queue }}
+          name: checkbox-results-${{ steps.device.outputs.queue }}
           path: extracted-artifacts/
       - name: Get numeric job ID
         id: job-id
         run: |
           jobs=$(gh api /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs)
-          # Matrix jobs include the matrix values in their name, e.g. "Testflinger Validation (dell-xps-13-9350-c36962, https://...)"
-          # We need to match based on the queue name which is unique per matrix instance
-          job_id=$(echo "$jobs" | jq -r '.jobs[] | select(.name | contains("${{ matrix.device.queue }}")) | .id')
+          # Matrix jobs include the tag in their name, e.g. "Testflinger Validation (intel-core-ultra-mtl)"
+          job_id=$(echo "$jobs" | jq -r '.jobs[] | select(.name | contains("${{ matrix.tag }}")) | .id')
           echo "id=$job_id" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Checkout partner-eng-gh-actions repo
-        uses: actions/checkout@v7
-        with:
-          repository: canonical/partner-eng-gh-actions
-          ref: main
-          token: ${{ secrets.PE_BOT_PAT }}
-          path: .github/actions/partner-eng-gh-actions
       - name: Generate TO start-payload
+        env:
+          SNAP_VERSION: ${{ needs.resolve-snap-info.outputs.version }}
+          SNAP_REVISION: ${{ needs.resolve-snap-info.outputs.revision }}
         run: |
           test_plan=$(grep "^unit = " ${GITHUB_WORKSPACE}/checkbox/bin/test-runner-automated | cut -d '=' -f2 | xargs)
-          revision=$(snap info openvino-ai-plugins-gimp | grep latest/edge | cut -d "(" -f2 | cut -d ")" -f1)
-          version=$(snap info openvino-ai-plugins-gimp | grep latest/edge | awk '{print $2}')
           cat <<EOF > start-payload-0.json
           {
             "name": "openvino-ai-plugins-gimp",
-            "version": "${version}",
+            "version": "${SNAP_VERSION}",
             "arch": "amd64",
             "test_plan": "${test_plan}",
             "environment": "${{ steps.artifacts.outputs.env0 }}",
             "initial_status": "IN_PROGRESS",
             "needs_assignment": false,
             "family": "snap",
-            "revision": "${revision}",
+            "revision": "${SNAP_REVISION}",
             "track": "latest",
             "store": "ubuntu",
             "branch": "",
