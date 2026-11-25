@@ -16,6 +16,8 @@ concurrency:
 env:
   CHECKBOX_PROVIDER_NAME: checkbox-openvino-ai-plugins-gimp
   TEST_OBSERVER_URL: https://test-observer-api.canonical.com
+  # Lab history release to select devices from and record results under.
+  LAB_UBUNTU_RELEASE: ubuntu-26.04
 
 jobs:
   resolve-snap-info:
@@ -87,7 +89,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: canonical/partner-eng-gh-actions
-          ref: lab/various-improvements
+          ref: main
           token: ${{ secrets.PE_BOT_PAT }}
           path: .github/actions/partner-eng-gh-actions
       - name: Resolve device from lab history
@@ -95,22 +97,28 @@ jobs:
         uses: ./.github/actions/partner-eng-gh-actions/.github/actions/lab/device-from-repo-history
         with:
           github_token: ${{ secrets.PE_BOT_PAT }}
-          tags: '["${{ matrix.tag }}"]'
+          tags: '["${{ matrix.tag }}", "${{ env.LAB_UBUNTU_RELEASE }}"]'
+          check_availability: 'true'
           testflinger_client_id: ${{ secrets.TESTFLINGER_CLIENT_ID }}
           testflinger_secret_key: ${{ secrets.TESTFLINGER_SECRET_KEY }}
       - name: Fail if no recorded device matched
         if: ${{ steps.device.outputs.matched != 'true' }}
+        env:
+          TAG: ${{ matrix.tag }}
         run: |
-          echo "::error::No successful lab-history entry found for tag ${{ matrix.tag }}"
+          echo "::error::No successful ${LAB_UBUNTU_RELEASE} lab-history entry found for tag ${TAG}"
           exit 1
       - uses: actions/download-artifact@v8
         with:
           name: ${{ env.CHECKBOX_PROVIDER_NAME }}
-      - name: Build job file from template with oemscript provisioning
+      - name: Build job file from template with oem_autoinstall provisioning
+        env:
+          QUEUE: ${{ steps.device.outputs.queue }}
+          DETAILS: ${{ steps.device.outputs.details }}
         run: |
-          sed -e "s|REPLACE_QUEUE|${{ steps.device.outputs.queue }}|" \
-          -e "s|REPLACE_IMAGE_URL|$(jq -r '.image' <<< '${{ steps.device.outputs.details }}')|" \
-          -e "s|REPLACE_ATTACHMENT|${{ env.CHECKBOX_PROVIDER_NAME }}.snap|" \
+          sed -e "s|REPLACE_QUEUE|${QUEUE}|" \
+          -e "s|REPLACE_IMAGE_URL|$(jq -r '.image' <<< "${DETAILS}")|" \
+          -e "s|REPLACE_ATTACHMENT|${CHECKBOX_PROVIDER_NAME}.snap|" \
           ${GITHUB_WORKSPACE}/.github/testflinger/job-def.yaml > \
           ${GITHUB_WORKSPACE}/job.yaml
       - name: Submit testflinger job
@@ -142,11 +150,12 @@ jobs:
             echo "provisioned=unknown" >> "$GITHUB_OUTPUT"
           fi
       - name: Record device history
-        if: ${{ always() && steps.device.outputs.matched == 'true' }}
+        if: ${{ always() && steps.submit.outputs.id != '' }}
         uses: ./.github/actions/partner-eng-gh-actions/.github/actions/lab/update-history
         with:
           device: ${{ steps.device.outputs.device }}
           queue: ${{ steps.device.outputs.queue }}
+          release: ${{ env.LAB_UBUNTU_RELEASE }}
           device_context: ${{ steps.device.outputs.details }}
           job_path: ${{ github.workspace }}/job.yaml
           outcome: skipped
@@ -210,8 +219,9 @@ jobs:
               tar -xJf "$file" submission.json -O > "$run_dir/submission.json"
 
               # Build environment key, for example: env0=intel-core-ultra-mtl-24.04.3-6.17-generic
-              kernel_ver=$(jq -r '[.system_information | .. | objects | to_entries[] | select(.key | endswith("#Kernel")) | .value] | first' "$run_dir/submission.json")
-              os_ver=$(jq -r '[.system_information | .. | objects | to_entries[] | select(.key | endswith("#Distro")) | .value] | first | match("Ubuntu ([0-9.]+)") | .captures[0].string' "$run_dir/submission.json")
+              # Fall back to the distribution/uname collectors when inxi fails (it does on 26.04).
+              kernel_ver=$(jq -r '([.system_information | .. | objects | to_entries[] | select(.key | endswith("#Kernel")) | .value] | first) // .system_information.uname.outputs.payload.kernel // "unknown"' "$run_dir/submission.json")
+              os_ver=$(jq -r '(([.system_information | .. | objects | to_entries[] | select(.key | endswith("#Distro")) | .value] | first) // .system_information.distribution.outputs.payload.description // "") | (match("Ubuntu ([0-9.]+)").captures[0].string? // "unknown")' "$run_dir/submission.json")
               echo "env$i=${{ matrix.tag }}-${os_ver}-${kernel_ver}" >> $GITHUB_OUTPUT
 
               # Save tarball path to output
